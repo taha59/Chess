@@ -1,11 +1,29 @@
-from PIL import Image
+import pygame as p
+from Chess import ChessEngine
 
-#...
+def main():
 
-img = Image.open('chess image.jpg')
-w_pawn = Image.open('images/bB.png')
-a_eight = (102, 30, 210, 158)  # Left, top, right and bottom coordinates of where the piece is pasted onto the board
+    board = [
+        ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
+        ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
+        ["", "", "", "", "", "", "", ""],
+        ["", "", "", "", "", "", "", ""],
+        ["", "", "", "", "", "", "", ""],
+        ["", "", "", "", "", "", "", ""],
+        ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
+        ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
+    ]
 
-battle_board = img.copy()
-battle_board.paste(w_pawn, a_eight)
-battle_board.show()
+    width = height = 512
+    dimension = 8
+    sq_size = height // dimension
+    max_fps = 15
+    images = {}
+
+    #add the unique chess pieces to chess_pieces variable
+    chess_pieces = list(set(board[0])) + list(set(board[1])) + list(set(board[6])) + list(set(board[7]))
+    for i in chess_pieces:
+        print(i)
+
+if __name__ == "__main__":
+    main()

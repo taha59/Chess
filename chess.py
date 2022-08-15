@@ -3,9 +3,10 @@ import pygame
 width = height = 512
 dimension = 8
 sq_size = height // dimension
-
+images = {}
 FPS = 60
-def load_imgs(chess_pieces, images, sq_size):
+
+def load_imgs(chess_pieces, images):
     for piece in chess_pieces:
         images[piece] = pygame.transform.scale(pygame.image.load("images/" + piece + ".png"), (sq_size, sq_size))
 
@@ -15,11 +16,14 @@ def draw_board(window):
         for c in range(8):
             #choose color based on if the cord pair 
             color = colors[((r+c) % 2)]
-            pygame.draw.rect(window, color, pygame.Rect(c*sq_size, r*sq_size, sq_size, sq_size))
+            pygame.draw.rect(window, color, pygame.Rect(r*sq_size, c*sq_size, sq_size, sq_size))
 
 
 def draw_pieces(window, board):
-    j = 1
+    for r in range(8):
+        for c in range(8):
+            if board[r][c] != "":
+                window.blit(images[board[r][c]], pygame.Rect(c*sq_size, r*sq_size, sq_size, sq_size))
 
 def chess_graphics(window, board):
     draw_board(window)
@@ -27,6 +31,7 @@ def chess_graphics(window, board):
 
 def main():
 
+    #initialize the chess board
     board = [
         ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
         ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
@@ -38,12 +43,6 @@ def main():
         ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
     ]
 
-    width = height = 512
-    dimension = 8
-    sq_size = height // dimension
-    max_fps = 15
-    images = {}
-
     window = pygame.display.set_mode((width, height))
     pygame.display.set_caption("CHESS")
 
@@ -52,7 +51,9 @@ def main():
 
     run = True
     clock = pygame.time.Clock()
-    load_imgs(chess_pieces, images, sq_size)
+    load_imgs(chess_pieces, images)
+    
+
     while run:
 
         for event in pygame.event.get():
@@ -62,9 +63,10 @@ def main():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 pass
         
-        chess_graphics(window,board)
+        chess_graphics(window, board)
+
         clock.tick(FPS)
-        pygame.display.flip()
+        pygame.display.update()
     
     pygame.quit()
 

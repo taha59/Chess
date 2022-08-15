@@ -6,6 +6,7 @@ sq_size = height // dimension
 images = {}
 FPS = 60
 
+#maps the pieces to their respective loaded image
 def load_imgs(chess_pieces, images):
     for piece in chess_pieces:
         images[piece] = pygame.transform.scale(pygame.image.load("images/" + piece + ".png"), (sq_size, sq_size))
@@ -14,9 +15,9 @@ def draw_board(window):
     colors = [pygame.Color("white"), pygame.Color("grey")]
     for r in range(8):
         for c in range(8):
-            #choose color based on if the cord pair 
+            #choose color based on the cordinate pair 
             color = colors[((r+c) % 2)]
-            pygame.draw.rect(window, color, pygame.Rect(r*sq_size, c*sq_size, sq_size, sq_size))
+            pygame.draw.rect(window, color, pygame.Rect(c*sq_size, r*sq_size, sq_size, sq_size))
 
 
 def draw_pieces(window, board):
@@ -53,6 +54,8 @@ def main():
     clock = pygame.time.Clock()
     load_imgs(chess_pieces, images)
     
+ 
+    clicked_piece = None
 
     while run:
 
@@ -60,13 +63,34 @@ def main():
             if event.type == pygame.QUIT:
                 run = False
             
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                pass
-        
-        chess_graphics(window, board)
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                x,y = pygame.mouse.get_pos()
+                x = int(x / sq_size)
+                y = int(y / sq_size)
 
-        clock.tick(FPS)
+                prev_x = x
+                prev_y = y
+
+                if board[y][x] != "":
+                    clicked_piece = images[board[y][x]]
+                    print(board[y][x], "selected at pos", x, y)
+
+            
+            elif clicked_piece != None and event.type == pygame.MOUSEBUTTONUP:
+                x,y = pygame.mouse.get_pos()
+                x = int(x / sq_size)
+                y = int(y / sq_size)
+                
+                #move the selected piece to where the user wants to place it on the board then clear the prev piece
+                board[y][x] = board[prev_y][prev_x]
+                board[prev_y][prev_x] = ""
+
+                print("let goo",x, y)
+                
+        #draw chess board and pieces
+        chess_graphics(window, board)
         pygame.display.update()
+        clock.tick(FPS)
     
     pygame.quit()
 

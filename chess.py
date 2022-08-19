@@ -1,3 +1,4 @@
+from re import A
 import pygame
 
 width = height = 512
@@ -19,7 +20,6 @@ def draw_board(window):
             color = colors[((r+c) % 2)]
             pygame.draw.rect(window, color, pygame.Rect(c*sq_size, r*sq_size, sq_size, sq_size))
 
-
 def draw_pieces(window, board):
     for r in range(8):
         for c in range(8):
@@ -33,6 +33,25 @@ def chess_graphics(window, board):
 def main():
 
     #initialize the chess board
+    
+    # Board pieces representation:
+
+    # black pieces:
+    # bR as black rook
+    # bN as black knight
+    # bB as black bishop
+    # bQ as black queen
+    # bK as black king
+    # bp as black pawn
+
+    #white pieces:
+    # wR as white rook
+    # wN as white knight
+    # wB as white bishop
+    # wQ as white queen
+    # wK as white king
+    # wp as white pawn
+
     board = [
         ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
         ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
@@ -64,28 +83,49 @@ def main():
                 run = False
             
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                x,y = pygame.mouse.get_pos()
+                y,x = pygame.mouse.get_pos()
                 x = int(x / sq_size)
                 y = int(y / sq_size)
 
                 prev_x = x
                 prev_y = y
 
-                if board[y][x] != "":
-                    clicked_piece = images[board[y][x]]
-                    print(board[y][x], "selected at pos", x, y)
+                if board[x][y] != "":
+                    clicked_piece = images[board[x][y]]
+                    print(board[x][y], "selected at pos", x, y)
 
             
             elif clicked_piece != None and event.type == pygame.MOUSEBUTTONUP:
-                x,y = pygame.mouse.get_pos()
+                y,x = pygame.mouse.get_pos()
                 x = int(x / sq_size)
                 y = int(y / sq_size)
                 
+                print("left at", x, y)
                 #move the selected piece to where the user wants to place it on the board then clear the prev piece
-                board[y][x] = board[prev_y][prev_x]
-                board[prev_y][prev_x] = ""
+                valid_moves = valid_move(board, prev_x, prev_y)
+                
+                if valid_moves != None:
+                    for i in range(len(valid_moves)):
+                        #white pawn up movement
+                        if (prev_x - valid_moves[i]) == x and y == prev_y and board[x][y] == "":
+                            board[x][y] = board[prev_x][prev_y]
+                            board[prev_x][prev_y] = ""
+                        
 
-                print("let goo",x, y)
+                        #white pawn up - right movement
+                        if board[prev_x - 1][prev_y + 1] != "":
+                            if prev_x - 1 == x and prev_y + 1 == y:
+                                board[x][y] = board[prev_x][prev_y]
+                                board[prev_x][prev_y] = ""
+                        
+                        #white pawn up - left movement
+                        if board[prev_x - 1][prev_y - 1] != "":
+                            if prev_x - 1 == x and prev_y - 1 == y:
+                                board[x][y] = board[prev_x][prev_y]
+                                board[prev_x][prev_y] = ""
+
+
+
                 
         #draw chess board and pieces
         chess_graphics(window, board)
@@ -93,6 +133,13 @@ def main():
         clock.tick(FPS)
     
     pygame.quit()
+
+def valid_move(board, x, y):
+    if board[x][y] == "wp":
+
+        if x == 6:
+            return [1,2]
+        return [1]
 
 if __name__ == "__main__":
     main()

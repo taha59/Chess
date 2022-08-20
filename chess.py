@@ -1,4 +1,3 @@
-from re import A
 import pygame
 
 width = height = 512
@@ -101,28 +100,11 @@ def main():
                 y = int(y / sq_size)
                 
                 print("left at", x, y)
-                #move the selected piece to where the user wants to place it on the board then clear the prev piece
-                valid_moves = valid_move(board, prev_x, prev_y)
                 
-                if valid_moves != None:
-                    for i in range(len(valid_moves)):
-                        #white pawn up movement
-                        if (prev_x - valid_moves[i]) == x and y == prev_y and board[x][y] == "":
-                            board[x][y] = board[prev_x][prev_y]
-                            board[prev_x][prev_y] = ""
-                        
-
-                        #white pawn up - right movement
-                        if board[prev_x - 1][prev_y + 1] != "":
-                            if prev_x - 1 == x and prev_y + 1 == y:
-                                board[x][y] = board[prev_x][prev_y]
-                                board[prev_x][prev_y] = ""
-                        
-                        #white pawn up - left movement
-                        if board[prev_x - 1][prev_y - 1] != "":
-                            if prev_x - 1 == x and prev_y - 1 == y:
-                                board[x][y] = board[prev_x][prev_y]
-                                board[prev_x][prev_y] = ""
+                #if the move is valid, move the selected piece to where the user wants to place it on the board then clear the prev piece
+                if valid_move_check(board, prev_x, prev_y, x, y) == True:
+                    board[x][y] = board[prev_x][prev_y]
+                    board[prev_x][prev_y] = ""
 
 
 
@@ -134,12 +116,57 @@ def main():
     
     pygame.quit()
 
-def valid_move(board, x, y):
-    if board[x][y] == "wp":
+def valid_move_check(board, prev_x, prev_y, x, y):
 
-        if x == 6:
-            return [1,2]
-        return [1]
+    piece = board[prev_x][prev_y]
+    parity = 1
+    if piece[1] == 'p':
+
+        #if a piece is black
+        if piece[0] == 'b':
+            print("black")
+            parity = -1
+            if prev_x == 1:
+                valid_moves = [1,2]
+            else:
+                valid_moves = [1]
+        
+        else:
+            if prev_x == 6:
+                valid_moves = [1,2]
+            else:
+                valid_moves = [1]
+
+        print(valid_moves)
+
+        for i in range(len(valid_moves)):
+            #white pawn up movement
+            if (prev_x - (parity * valid_moves[i]) ) == x and y == prev_y and board[x][y] == "":
+                return True
+            
+            print(prev_x - (parity * 1), prev_x + (parity * 1))
+            #white pawn up - right movement
+
+            index1 = prev_x - (parity * 1)
+            index2 = prev_y + (parity * 1)
+
+            if index1 < 8 and index2 < 8:
+                if board[prev_x - (parity * 1) ][prev_y + (parity * 1)] != "":
+                    if prev_x - (parity * 1) == x and prev_y + (parity * 1) == y:
+                        return True
+            else:
+                return False
+                        
+            #white pawn up - left movement
+            if board[prev_x - (parity * 1)][prev_y - (parity * 1)] != "":
+                if prev_x - (parity * 1) == x and prev_y - (parity * 1) == y:
+                    return True
+
+    return False
+
+
+
+
 
 if __name__ == "__main__":
     main()

@@ -74,7 +74,9 @@ def main():
     
  
     clicked_piece = None
+    selected_piece = False
 
+    Turns = 0
     while run:
 
         for event in pygame.event.get():
@@ -90,11 +92,25 @@ def main():
                 prev_y = y
 
                 if board[x][y] != "":
+                    
+                    if board[x][y][0] == 'w' and Turns % 2 == 0:
+                        print("White turn")
+                        Turns+=1
+                        
+                    elif board[x][y][0] == 'b' and Turns % 2 == 1:
+                        print("Black turn")
+                        Turns += 1
+                    else:
+                        print("Please wait for your turn")
+                        continue
+
+
                     clicked_piece = images[board[x][y]]
+                    selected_piece = True
                     print(board[x][y], "selected at pos", x, y)
 
             
-            elif clicked_piece != None and event.type == pygame.MOUSEBUTTONUP:
+            elif clicked_piece != None and event.type == pygame.MOUSEBUTTONUP and selected_piece == True:
                 y,x = pygame.mouse.get_pos()
                 x = int(x / sq_size)
                 y = int(y / sq_size)
@@ -105,6 +121,8 @@ def main():
                 if valid_move_check(board, prev_x, prev_y, x, y) == True:
                     board[x][y] = board[prev_x][prev_y]
                     board[prev_x][prev_y] = ""
+
+                selected_piece = False
 
 
 
@@ -120,11 +138,12 @@ def valid_move_check(board, prev_x, prev_y, x, y):
 
     piece = board[prev_x][prev_y]
     parity = 1
+
+    #Pawn movement
     if piece[1] == 'p':
 
-        #if a piece is black
+        #if a pawn is black
         if piece[0] == 'b':
-            print("black")
             parity = -1
             if prev_x == 1:
                 valid_moves = [1,2]
@@ -143,30 +162,81 @@ def valid_move_check(board, prev_x, prev_y, x, y):
             #white pawn up movement
             if (prev_x - (parity * valid_moves[i]) ) == x and y == prev_y and board[x][y] == "":
                 return True
-            
-            print(prev_x - (parity * 1), prev_x + (parity * 1))
-            #white pawn up - right movement
 
+            #white pawn up - right movement
             index1 = prev_x - (parity * 1)
             index2 = prev_y + (parity * 1)
 
             if index1 < 8 and index2 < 8:
-                if board[prev_x - (parity * 1) ][prev_y + (parity * 1)] != "":
-                    if prev_x - (parity * 1) == x and prev_y + (parity * 1) == y:
-                        return True
-            else:
-                return False
+                if board[prev_x - (parity * 1)][prev_y + (parity * 1)] != "":
+                    if board[prev_x - (parity * 1)][prev_y + (parity * 1)][0] != board[prev_x][prev_y][0]:
+                        if prev_x - (parity * 1) == x and prev_y + (parity * 1) == y:
+                            return True
                         
             #white pawn up - left movement
             if board[prev_x - (parity * 1)][prev_y - (parity * 1)] != "":
-                if prev_x - (parity * 1) == x and prev_y - (parity * 1) == y:
-                    return True
+                if board[prev_x - (parity * 1)][prev_y - (parity * 1)][0] != board[prev_x][prev_y][0]:
+                    if prev_x - (parity * 1) == x and prev_y - (parity * 1) == y:
+                        return True
+
+    #Bishop movement
+    if piece[1] == 'B':
+
+        #Down right
+        if (x - prev_x == y - prev_y):
+            value = x - prev_x
+            if (value) >= 1 and (value) <= 8:
+                return collision(board[x][y], board[prev_x][prev_y])
+                
+
+        #Down left
+        if (x - prev_x == prev_y - y):
+
+            value = x - prev_x
+            if (value) >= 1 and (value) <= 8:
+                return collision(board[x][y], board[prev_x][prev_y])
+
+        #Up right
+        if (prev_x - x == y - prev_y):
+
+            value = prev_x - x
+            if (value) >= 1 and (value) <= 8:
+                return collision(board[x][y], board[prev_x][prev_y])
+
+        #Up left
+        if (prev_x - x == prev_y - y):
+
+            value = prev_x - x
+            if (value) >= 1 and (value) <= 8:
+                return collision(board[x][y], board[prev_x][prev_y])
+        
+
+    #Rook movement
+    if piece[1] == 'R':
+
+        if x == prev_x and prev_y == y:
+            return False
+        else:
+            #horizontal movement
+            if (x == prev_x and (y >= 0 and y <= 8) ):
+                return collision(board[x][y], board[prev_x][prev_y])
+            
+            #vertical movement
+            if (y == prev_y and (x >= 0 and x <= 8) ):
+                return collision(board[x][y], board[prev_x][prev_y])
 
     return False
 
+def Check_collisions(piece, x, y, prev_x, prev_y, type_movement):
+    s
+def collision(piece, prev_piece):
+    if piece != "":
+        if piece[0] != prev_piece[0]:
+            return True
+        else:
+            return False
 
-
-
+    return True
 
 if __name__ == "__main__":
     main()

@@ -1,1 +1,5 @@
-# Chess
+# About the Project
+
+## Packages:
+### install pygame
+

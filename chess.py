@@ -1,3 +1,4 @@
+from re import S
 import pygame
 
 width = height = 512
@@ -93,16 +94,16 @@ def main():
 
                 if board[x][y] != "":
                     
-                    if board[x][y][0] == 'w' and Turns % 2 == 0:
-                        print("White turn")
-                        Turns+=1
+                    # if board[x][y][0] == 'w' and Turns % 2 == 0:
+                    #     print("White turn")
+                    #     Turns+=1
                         
-                    elif board[x][y][0] == 'b' and Turns % 2 == 1:
-                        print("Black turn")
-                        Turns += 1
-                    else:
-                        print("Please wait for your turn")
-                        continue
+                    # elif board[x][y][0] == 'b' and Turns % 2 == 1:
+                    #     print("Black turn")
+                    #     Turns += 1
+                    # else:
+                    #     print("Please wait for your turn")
+                    #     continue
 
 
                     clicked_piece = images[board[x][y]]
@@ -209,47 +210,102 @@ def collision(piece, prev_piece):
     return False
 
 def move_Rook(board, x, y, prev_x, prev_y):
-    if x == prev_x and prev_y == y:
-        print("ss")
-        return False
-    else:
-        #horizontal movement
-        if (x == prev_x and (y >= 0 and y <= 8) ):
-            return True
+        
+    #horizontal movement
+    if (x == prev_x and (y >= 0 and y <= 8) ):
+
+        if y - prev_y > 0:
+            print("going right")
+            for i in range(prev_y + 1, y):
+                if board[x][i] != "":
+                    return False
+        else:
+            print("going left")
+            for i in range(y + 1, prev_y):
+                if board[x][i] != "":
+                    return False
+
+        return True
             
-        #vertical movement
-        if (y == prev_y and (x >= 0 and x <= 8) ):
-            return True
+    #vertical movement
+    elif (y == prev_y and (x >= 0 and x <= 8) ):
+
+        if x - prev_x > 0:
+            print("going down")
+            for i in range(prev_x + 1, x):
+                if board[i][y] != "":
+                    return False
+        else:
+            print("going up")
+            for i in range(x + 1, prev_x):
+                if board[i][y] != "":
+                    return False
+
+        return True
 
 def move_Bishop(board, x, y, prev_x, prev_y):
+
     #Down right
-    if (x - prev_x == y - prev_y):
+    if ((x - prev_x == y - prev_y) and (x - prev_x > 0)):
+        
+        print("b down right move")
+    
         value = x - prev_x
+
+        for i in range(1, y - prev_y):
+            print(prev_x + i, prev_y + i)
+            if board[prev_x + i][prev_y + i] != "":
+                return False
+                
         if (value) >= 1 and (value) <= 8:
             return True
                 
 
     #Down left
-    if (x - prev_x == prev_y - y):
+    elif ((x - prev_x == prev_y - y) and (x - prev_x > 0)):
+        print("b down left move")
+
+        for i in range(1, prev_y - y):
+            print(prev_x - i, prev_y + i)
+            if board[prev_x + i][prev_y - i] != "":
+                return False
 
         value = x - prev_x
         if (value) >= 1 and (value) <= 8:
             return True
 
     #Up right
-    if (prev_x - x == y - prev_y):
+    elif (prev_x - x == y - prev_y):
+        print("b up right move")
+
+        for i in range(1, y - prev_y):
+            print(prev_x - i, prev_y + i)
+            if board[prev_x - i][prev_y + i] != "":
+                return False
 
         value = prev_x - x
         if (value) >= 1 and (value) <= 8:
             return True
 
     #Up left
-    if (prev_x - x == prev_y - y):
+    elif (prev_x - x == prev_y - y):
+        print("b up left move")
+        
+        for i in range(1, prev_y - y):
+            print(prev_x - i, prev_y + i)
+            if board[prev_x - i][prev_y - i] != "":
+                return False
 
         value = prev_x - x
         if (value) >= 1 and (value) <= 8:
             return True
 
+def move_Knight(board, x, y, prev_x, prev_y):
+    s
+
+def move_King(board, x, y, prev_x, prev_y):
+    s
+    
 if __name__ == "__main__":
     main()
     

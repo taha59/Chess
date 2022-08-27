@@ -94,16 +94,16 @@ def main():
 
                 if board[x][y] != "":
                     
-                    # if board[x][y][0] == 'w' and Turns % 2 == 0:
-                    #     print("White turn")
-                    #     Turns+=1
+                    if board[x][y][0] == 'w' and Turns % 2 == 0:
+                        print("White turn")
+                        Turns+=1
                         
-                    # elif board[x][y][0] == 'b' and Turns % 2 == 1:
-                    #     print("Black turn")
-                    #     Turns += 1
-                    # else:
-                    #     print("Please wait for your turn")
-                    #     continue
+                    elif board[x][y][0] == 'b' and Turns % 2 == 1:
+                        print("Black turn")
+                        Turns += 1
+                    else:
+                        print("Please wait for your turn")
+                        continue
 
 
                     clicked_piece = images[board[x][y]]
@@ -142,64 +142,30 @@ def valid_move_check(board, prev_x, prev_y, x, y):
         return False
     
     piece = board[prev_x][prev_y]
-    parity = 1
 
     #Pawn movement
     if piece[1] == 'p':
-
-        #if a pawn is black
-        if piece[0] == 'b':
-            parity = -1
-            if prev_x == 1:
-                valid_moves = [1,2]
-            else:
-                valid_moves = [1]
-        
-        else:
-            if prev_x == 6:
-                valid_moves = [1,2]
-            else:
-                valid_moves = [1]
-
-        print(valid_moves)
-
-        for i in range(len(valid_moves)):
-            #white pawn up movement
-            if (prev_x - (parity * valid_moves[i]) ) == x and y == prev_y and board[x][y] == "":
-                return True
-
-            #white pawn up - right movement
-            pawn_x = prev_x - (parity * 1)
-            pawn_y = prev_y + (parity * 1)
-
-            if pawn_x < 8 and pawn_y < 8:
-                if pawn_x == x and pawn_y == y and board[pawn_x][pawn_y] != "":
-                    return True
-            
-            #white pawn up - left movement
-            pawn_x = prev_x - (parity * 1)
-            pawn_y = prev_y - (parity * 1)
-
-            if pawn_x < 8 and pawn_y < 8:
-                if pawn_x == x and pawn_y == y and board[pawn_x][pawn_y] != "":
-                    return True
+        return move_Pawn(board, x, y, prev_x, prev_y)
 
     #Bishop movement
-    if piece[1] == 'B':
+    elif piece[1] == 'B':
         return  move_Bishop(board, x, y, prev_x, prev_y)
 
     #Rook movement
-    if piece[1] == 'R':
+    elif piece[1] == 'R':
         return move_Rook(board, x, y, prev_x, prev_y)
     
-    if piece[1] == 'Q':
+    elif piece[1] == 'Q':
         if move_Bishop(board, x, y, prev_x, prev_y) or move_Rook(board, x, y, prev_x, prev_y):
             return True
 
-    return False
+    elif piece[1] == 'K':
+        return move_King(x, y, prev_x, prev_y)
 
-def path_block_check(board, x, y, prev_x, prev_y, type_movement):
-    s
+    elif piece[1] == "N":
+        return move_Knight(x, y, prev_x, prev_y)
+
+    return False
 
 def collision(piece, prev_piece):
     
@@ -208,6 +174,46 @@ def collision(piece, prev_piece):
             print("collison")
             return True
     return False
+
+def move_Pawn(board, x, y, prev_x, prev_y):
+    piece = board[prev_x][prev_y]
+    parity = 1
+    #if a pawn is black
+    if piece[0] == 'b':
+        parity = -1
+        if prev_x == 1:
+            valid_moves = [1,2]
+        else:
+            valid_moves = [1]
+        
+    else:
+        if prev_x == 6:
+            valid_moves = [1,2]
+        else:
+            valid_moves = [1]
+
+    print(valid_moves)
+
+    for i in range(len(valid_moves)):
+        #white pawn up movement
+        if (prev_x - (parity * valid_moves[i]) ) == x and y == prev_y and board[x][y] == "":
+            return True
+
+        #white pawn up - right movement
+        pawn_x = prev_x - (parity * 1)
+        pawn_y = prev_y + (parity * 1)
+
+        if pawn_x < 8 and pawn_y < 8:
+            if pawn_x == x and pawn_y == y and board[pawn_x][pawn_y] != "":
+                return True
+            
+        #white pawn up - left movement
+        pawn_x = prev_x - (parity * 1)
+        pawn_y = prev_y - (parity * 1)
+
+        if pawn_x < 8 and pawn_y < 8:
+            if pawn_x == x and pawn_y == y and board[pawn_x][pawn_y] != "":
+                return True
 
 def move_Rook(board, x, y, prev_x, prev_y):
         
@@ -229,7 +235,8 @@ def move_Rook(board, x, y, prev_x, prev_y):
             
     #vertical movement
     elif (y == prev_y and (x >= 0 and x <= 8) ):
-
+        
+        #check for blocked paths
         if x - prev_x > 0:
             print("going down")
             for i in range(prev_x + 1, x):
@@ -300,11 +307,73 @@ def move_Bishop(board, x, y, prev_x, prev_y):
         if (value) >= 1 and (value) <= 8:
             return True
 
-def move_Knight(board, x, y, prev_x, prev_y):
-    s
+def move_Knight(x, y, prev_x, prev_y):
 
-def move_King(board, x, y, prev_x, prev_y):
-    s
+    #up right - 1
+    if x == prev_x - 2 and y == prev_y + 1:
+        return True
+    
+    #up right - 2
+    elif x == prev_x - 1 and y == prev_y + 2:
+        return True
+
+    #up left - 1
+    elif x == prev_x - 2 and y == prev_y - 1:
+        return True
+    
+    #up left - 2
+    elif x == prev_x - 1 and y == prev_y - 2:
+        return True
+
+    #down left - 1
+    elif x == prev_x + 2 and y == prev_y - 1:
+        return True
+
+    #down left - 2
+    elif x == prev_x + 1 and y == prev_y - 2:
+        return True
+
+    #down right - 1
+    elif x == prev_x + 2 and y == prev_y + 1:
+        return True
+    
+    #down right - 2
+    elif x == prev_x + 1 and y == prev_y + 2:
+        return True
+
+def move_King(x, y, prev_x, prev_y):
+    #up
+    if x == prev_x - 1 and y == prev_y:
+        return True
+
+    #up left
+    elif x == prev_x - 1 and y == prev_y - 1:
+        return True
+    
+    #up right
+    elif x == prev_x - 1 and y == prev_y + 1:
+        return True
+    
+    #left
+    elif x == prev_x and y == prev_y - 1:
+        return True
+    
+    #right
+    elif x == prev_x and y == prev_y + 1:
+        return True
+    
+    #down left
+    elif x == prev_x + 1 and y == prev_y - 1:
+        return True
+
+    #down
+    elif x == prev_x + 1 and y == prev_y:
+        return True
+
+    #down right
+    elif x == prev_x + 1 and y == prev_y + 1:
+        return True
+    
     
 if __name__ == "__main__":
     main()

@@ -45,6 +45,7 @@ class Chess:
         self.y = 0
         self.whiteKing_pos = [7,4]
         self.blackKing_pos = [0,4]
+        self.possible_moves = []
 
     #maps the pieces to their respective loaded image
     def load_imgs(self):
@@ -71,7 +72,7 @@ class Chess:
 
     def is_checked(self):
         king_pos = 0
-        #print if a piece was checked
+        
         if self.board[self.x][self.y][0] == "w":
             king_pos = self.blackKing_pos
         else:
@@ -84,7 +85,7 @@ class Chess:
         self.x = king_pos[0]
         self.y = king_pos[1]
 
-        if (self.valid_move_check()):
+        if self.valid_move_check():
             return True
         return False
 
@@ -115,16 +116,16 @@ class Chess:
             if self.move_Bishop() or self.move_Rook():
                 return True
 
+        #king movement
         elif piece[1] == 'K':
             return self.move_King()
 
+        #knight movement
         elif piece[1] == "N":
             return self.move_Knight()
 
         return False
 
-    def Turn_checker():
-        s
     def collision(self):
         piece = self.board[self.x][self.y]
         prev_piece = self.board[self.prev_x][self.prev_y]
@@ -153,28 +154,25 @@ class Chess:
             else:
                 valid_moves = [1]
 
-        print(valid_moves)
-
         for i in range(len(valid_moves)):
             #pawn up movement
             if (self.prev_x - (parity * valid_moves[i]) ) == self.x and self.y == self.prev_y and self.board[self.x][self.y] == "":
                 return True
 
-            #pawn up - right movement
-            pawn_x = self.prev_x - (parity * 1)
-            pawn_y = self.prev_y + (parity * 1)
+        #pawn up - right movement
+        pawn_x = self.prev_x - (parity * 1)
+        pawn_y = self.prev_y + (parity * 1)
 
-            if pawn_x < 8 and pawn_y < 8:
-                if pawn_x == self.x and pawn_y == self.y and self.board[pawn_x][pawn_y] != "":
-                    return True
-                
-            #pawn up - left movement
-            pawn_x = self.prev_x - (parity * 1)
-            pawn_y = self.prev_y - (parity * 1)
+        if pawn_x == self.x and pawn_y == self.y and self.board[self.x][self.y] != "":
+            return True
+            
+        #pawn up - left movement
+        pawn_x = self.prev_x - (parity * 1)
+        pawn_y = self.prev_y - (parity * 1)
 
-            if pawn_x < 8 and pawn_y < 8:
-                if pawn_x == self.x and pawn_y == self.y and self.board[pawn_x][pawn_y] != "":
-                    return True
+        
+        if pawn_x == self.x and pawn_y == self.y and self.board[self.x][self.y] != "":
+            return True
 
     def move_Rook(self):
             
@@ -221,9 +219,11 @@ class Chess:
             value = self.x - self.prev_x
 
             for i in range(1, self.y - self.prev_y):
-                print(self.prev_x + i, self.prev_y + i)
                 if self.board[self.prev_x + i][self.prev_y + i] != "":
                     return False
+                print(self.prev_x + i, self.prev_y + i)
+
+                self.possible_moves.append([self.prev_x + i, self.prev_y + i])
                     
             if (value) >= 1 and (value) <= 8:
                 return True
@@ -234,9 +234,10 @@ class Chess:
             print("b down left move")
 
             for i in range(1, self.prev_y - self.y):
-                print(self.prev_x - i, self.prev_y + i)
                 if self.board[self.prev_x + i][self.prev_y - i] != "":
                     return False
+                
+                print(self.prev_x + i, self.prev_y - i)
 
             value = self.x - self.prev_x
             if (value) >= 1 and (value) <= 8:
@@ -247,10 +248,10 @@ class Chess:
             print("b up right move")
 
             for i in range(1, self.y - self.prev_y):
-                print(self.prev_x - i, self.prev_y + i)
+               
                 if self.board[self.prev_x - i][self.prev_y + i] != "":
                     return False
-
+                print(self.prev_x - i, self.prev_y + i)
             value = self.prev_x - self.x
             if (value) >= 1 and (value) <= 8:
                 return True
@@ -260,7 +261,7 @@ class Chess:
             print("b up left move")
             
             for i in range(1, self.prev_y - self.y):
-                print(self.prev_x - i, self.prev_y + i)
+                print(self.prev_x - i, self.prev_y - i)
                 if self.board[self.prev_x - i][self.prev_y - i] != "":
                     return False
 
@@ -341,8 +342,6 @@ class Chess:
         clock = pygame.time.Clock()
         self.load_imgs()
         
-    
-        clicked_piece = None
         selected_piece = False
 
         Turns = 0
@@ -354,6 +353,7 @@ class Chess:
                 
                 #handle events when a chess piece is selected
                 elif event.type == pygame.MOUSEBUTTONDOWN:
+
                     self.y,self.x = pygame.mouse.get_pos()
                     self.x = int(self.x / sq_size)
                     self.y = int(self.y / sq_size)
@@ -363,15 +363,10 @@ class Chess:
 
                     if self.board[self.x][self.y] != "":
                         
-                        if self.board[self.x][self.y][0] == 'w' and Turns % 2 == 0:
-                            print("White turn")
-                            Turns+=1
-                            
-                        elif self.board[self.x][self.y][0] == 'b' and Turns % 2 == 1:
-                            print("Black turn")
-                            Turns += 1
-                        else:
-                            print("Please wait for your turn")
+                        chess_piece_color = ["w", "b"]
+                        
+                        if chess_piece_color[Turns % 2] != self.board[self.x][self.y][0]:
+                            print(chess_piece_color[Turns % 2], "Turn !!!!!!!!!")
                             continue
 
                         selected_piece = True
@@ -380,14 +375,20 @@ class Chess:
 
                 #when a selected piece is dropped on a location
                 elif event.type == pygame.MOUSEBUTTONUP and selected_piece == True:
+                    
                     self.y,self.x = pygame.mouse.get_pos()
                     self.x = int(self.x / sq_size)
                     self.y = int(self.y / sq_size)
                     
+                    #if a chess piece was dropped successfully set the boolean to false
+                    selected_piece = False
+
                     print("left at", self.x, self.y)
                     
                     #if the move is valid, move the selected piece to where the user wants to place it on the board then clear the prev piece
                     if self.valid_move_check():
+                        
+                        print(self.possible_moves)
                         self.board[self.x][self.y] = self.board[self.prev_x][self.prev_y]
                         self.board[self.prev_x][self.prev_y] = ""
                         
@@ -400,11 +401,11 @@ class Chess:
                         #confirm if the opposing king is checked whenever any chess piece is moved
                         if self.is_checked():
                             print(self.board[self.x][self.y], "is checked")
+                        
+                        Turns += 1
                     else:
                         continue
-                    
-                    #if a chess piece was dropped successfully set the boolean to false
-                    selected_piece = False
+                
                     
             #draw chess board and pieces
             self.chess_graphics()

@@ -95,42 +95,41 @@ class Chess:
         
         #not a valid move if pieces dont move
         if prev_x == x and prev_y == y:
-            return False
+            return
         
         #if the chess piece hits another piece with same color its not a valid move
         if self.board[x][y] != "" and self.board[prev_x][prev_y][0] == self.board[x][y][0]:
-            return False
+            return
 
         piece = self.board[prev_x][prev_y]
 
         #Pawn movement
         if piece[1] == 'p':
-            return self.move_Pawn(prev_x, prev_y, x, y)
+            self.move_Pawn(prev_x, prev_y)
 
         #Bishop movement
         elif piece[1] == 'B':
-            return  self.move_Bishop(prev_x, prev_y, x, y)
+            self.move_Bishop(prev_x, prev_y, x, y)
 
         #Rook movement
         elif piece[1] == 'R':
-            return self.move_Rook(prev_x, prev_y, x, y)
+            self.move_Rook(prev_x, prev_y)
         
         #queen movement is a combination of rook and bishop movement
         elif piece[1] == 'Q':
-            if self.move_Bishop(prev_x, prev_y, x, y) or self.move_Rook(prev_x, prev_y, x, y):
-                return True
+            self.move_Bishop(prev_x, prev_y, x, y)
+            self.move_Rook(prev_x, prev_y)
 
         #king movement
         elif piece[1] == 'K':
-            return self.move_King(prev_x, prev_y, x, y)
+            self.move_King(prev_x, prev_y, x, y)
 
         #knight movement
         elif piece[1] == "N":
-            return self.move_Knight(prev_x, prev_y, x, y)
+            self.move_Knight(prev_x, prev_y, x, y)
 
-        return False
 
-    def move_Pawn(self, prev_x, prev_y, x, y):
+    def move_Pawn(self, prev_x, prev_y):
         piece = self.board[prev_x][prev_y]
         parity = 1
         #if a pawn is black
@@ -147,60 +146,53 @@ class Chess:
             else:
                 valid_moves = [1]
 
+        #UP MOVEMENT
         for i in range(len(valid_moves)):
-            #pawn up movement
-            if (prev_x - (parity * valid_moves[i]) ) == x and y == prev_y and self.board[x][y] == "":
-                return True
+            if MIN_INDEX <= (prev_x - (parity * valid_moves[i])) <= MAX_INDEX and MIN_INDEX <= prev_y <= MAX_INDEX and self.board[prev_x - (parity * valid_moves[i])][prev_y] == "":
+                self.possible_moves.append([prev_x - (parity * valid_moves[i]), prev_y])
 
-        #pawn up - right movement
-        pawn_x = prev_x - (parity * 1)
-        pawn_y = prev_y + (parity * 1)
+        #RIGHT CAPTURE
 
-        if pawn_x == x and pawn_y == y and self.board[x][y] != "":
-            return True
+        if MIN_INDEX <= (prev_x - parity) <= MAX_INDEX and MIN_INDEX <= (prev_y + parity) <= MAX_INDEX and self.board[prev_x - parity][prev_y + parity] != "":
+            self.possible_moves.append([prev_x - parity, prev_y + parity])
             
-        #pawn up - left movement
-        pawn_x = prev_x - (parity * 1)
-        pawn_y = prev_y - (parity * 1)
+        #LEFT CAPTURE
 
+        if  MIN_INDEX <= (prev_x - parity) <= MAX_INDEX and MIN_INDEX <= (prev_y - parity) <= MAX_INDEX and  self.board[prev_x - parity][prev_y - parity] != "":
+            self.possible_moves.append([prev_x - parity, prev_y - parity])
         
-        if pawn_x == x and pawn_y == y and self.board[x][y] != "":
-            return True
+        #en passant
 
-    def move_Rook(self, prev_x, prev_y, x, y):
-            
+        #promotion
+
+    def move_Rook(self, prev_x, prev_y):
+        print("moving rook")
+
         #horizontal movement
-        if (x == prev_x and (y >= 0 and y <= 8) ):
+        for i in range(prev_y + 1, 8):
+            self.possible_moves.append([prev_x, i])
+            if self.board[prev_x][i] != "":
+                break
 
-            if y - prev_y > 0:
-                print("going right")
-                for i in range(prev_y + 1, y):
-                    if self.board[x][i] != "":
-                        return False
-            else:
-                print("going left")
-                for i in range(y + 1, prev_y):
-                    if self.board[x][i] != "":
-                        return False
-
-            return True
+    
+        for i in range(prev_y - 1, -1, -1):
+            self.possible_moves.append([prev_x, i])
+            if self.board[prev_x][i] != "":
+                break
                 
         #vertical movement
-        elif (y == prev_y and (x >= 0 and x <= 8) ):
-            
-            #check for blocked paths
-            if x - prev_x > 0:
-                print("going down")
-                for i in range(prev_x + 1, x):
-                    if self.board[i][y] != "":
-                        return False
-            else:
-                print("going up")
-                for i in range(x + 1, prev_x):
-                    if self.board[i][y] != "":
-                        return False
+        for i in range(prev_x + 1, 8):
 
-            return True
+            self.possible_moves.append([i, prev_y])
+            if self.board[i][prev_y] != "":
+                break
+            
+    
+        for i in range(prev_x - 1, -1, -1):
+
+            self.possible_moves.append([i, prev_y])
+            if self.board[i][prev_y] != "":
+                break
 
     def move_Bishop(self, prev_x, prev_y, x, y):
 
@@ -352,13 +344,14 @@ class Chess:
                     self.prev_x = self.x
                     self.prev_y = self.y
 
+
                     if self.board[self.x][self.y] != "":
                         
-                        chess_piece_color = ["w", "b"]
+                        # chess_piece_color = ["w", "b"]
                         
-                        if chess_piece_color[Turns % 2] != self.board[self.x][self.y][0]:
-                            print(self.color[chess_piece_color[Turns % 2]], "Turn !!!!!!!!!")
-                            continue
+                        # if chess_piece_color[Turns % 2] != self.board[self.x][self.y][0]:
+                        #     print(self.color[chess_piece_color[Turns % 2]], "Turn !!!!!!!!!")
+                        #     continue
 
                         selected_piece = True
                         print(self.board[self.x][self.y], "selected at pos", self.x, self.y)
@@ -366,7 +359,7 @@ class Chess:
 
                 #when a selected piece is dropped on a location
                 elif event.type == pygame.MOUSEBUTTONUP and selected_piece == True:
-                    print(self.possible_moves)
+        
                     self.y,self.x = pygame.mouse.get_pos()
                     self.x = int(self.x / sq_size)
                     self.y = int(self.y / sq_size)
@@ -377,47 +370,24 @@ class Chess:
                     print("left at", self.x, self.y)
                     
                     #if the move is valid, move the selected piece to where the user wants to place it on the board then clear the prev piece
-                    if self.valid_move_check(self.prev_x, self.prev_y, self.x, self.y):
-                        x = self.x
-                        y = self.y
+                    self.valid_move_check(self.prev_x, self.prev_y, self.x, self.y)
+
+                    x = self.x
+                    y = self.y
+
+                    if [x,y] in self.possible_moves:
                         
                         self.board[self.x][self.y] = self.board[self.prev_x][self.prev_y]
                         self.board[self.prev_x][self.prev_y] = ""
                         
-                        #update king pos if its moved to a new location
-                        if self.board[self.x][self.y] == "wK":
-                            self.whiteKing_pos = [self.x,self.y]
-                        elif self.board[self.x][self.y] == "bK":
-                            self.blackKing_pos = [self.x,self.y]
-                        
-                        king_pos = self.get_kings_pos(x, y)
-
-                        #confirm if the opposing king is checked whenever any chess piece is moved
-                        if self.is_checked(self.x, self.y, king_pos[0], king_pos[1]):
-                            print(self.board[self.x][self.y], "checked", self.board[king_pos[0]][king_pos[1]])
-
-                            for i in range(8):
-                                for j in range(8):
-
-                                    #insert valid king moves into a list by placing the king to each cord on the board and checking if its a valid move or not
-                                    if self.valid_move_check(king_pos[0], king_pos[1], i, j):
-                                        if [i,j] not in self.possible_moves:
-                                            self.possible_moves.append([i,j])
-                                        
-                                        #if the king is being checked at i,j remove it from the king's possible moves as it cant move to a location that is in check
-                                        if self.is_checked(self.x, self.y, i, j):
-                                            self.possible_moves.remove([i,j])
-
-                            #if the king is in check and there are no possible moves left for the king, end the game and display a checkmate message
-                            if len(self.possible_moves) == 0:
-                                print("Checkmate!", self.color[self.board[self.x][self.y][0]], "wins")
-                                exit()
-                                        
+                       
                         print(self.possible_moves)
-                        self.possible_moves.clear()
                         Turns += 1
                     else:
+                        self.possible_moves.clear()
                         continue
+
+                    self.possible_moves.clear()
                 
                     
             #draw chess board and pieces

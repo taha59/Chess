@@ -25,10 +25,10 @@ class Chess:
         self.board = [
             ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
             ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
-            ["", "", "", "", "", "", "", ""],
-            ["", "", "", "", "", "", "", ""],
-            ["", "", "", "", "", "", "", ""],
-            ["", "", "", "", "", "", "", ""],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
             ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
             ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
         ]
@@ -50,6 +50,19 @@ class Chess:
         self.color["b"] = "BLACK"
         self.color["w"] = "WHITE"
 
+    def detect_collisons(self, prev_x, prev_y, x, y):
+        enemy_color = {}
+        enemy_color["w"] = "b"
+        enemy_color["b"] = "w"
+
+        if self.board[x][y][0] != '-' and self.board[x][y][0] == enemy_color[self.board[prev_x][prev_y][0]]:
+            self.possible_moves.append([x, y])
+            return False
+        elif self.board[x][y][0] != '-' and self.board[x][y][0] == self.board[prev_x][prev_y][0]:
+            return False
+        
+        return True
+
     #maps the pieces to their respective loaded image
     def load_imgs(self):
         for piece in self.chess_pieces:
@@ -66,7 +79,7 @@ class Chess:
     def draw_pieces(self):
         for r in range(8):
             for c in range(8):
-                if self.board[r][c] != "":
+                if self.board[r][c] != "--":
                     self.window.blit(self.images[self.board[r][c]], pygame.Rect(c*sq_size, r*sq_size, sq_size, sq_size))
 
     def chess_graphics(self):
@@ -95,44 +108,49 @@ class Chess:
         
         #not a valid move if pieces dont move
         if prev_x == x and prev_y == y:
-            return False
+            return
         
-        #if the chess piece hits another piece with same color its not a valid move
-        if self.board[x][y] != "" and self.board[prev_x][prev_y][0] == self.board[x][y][0]:
-            return False
+        # #if the chess piece hits another piece with same color its not a valid move
+        # if self.board[x][y] != "--" and self.board[prev_x][prev_y][0] == self.board[x][y][0]:
+        #     return
 
         piece = self.board[prev_x][prev_y]
 
         #Pawn movement
         if piece[1] == 'p':
-            return self.move_Pawn(prev_x, prev_y, x, y)
+            self.move_Pawn(prev_x, prev_y)
 
         #Bishop movement
         elif piece[1] == 'B':
-            return  self.move_Bishop(prev_x, prev_y, x, y)
+            self.move_Bishop(prev_x, prev_y)
 
         #Rook movement
         elif piece[1] == 'R':
-            return self.move_Rook(prev_x, prev_y, x, y)
+            self.move_Rook(prev_x, prev_y)
         
         #queen movement is a combination of rook and bishop movement
         elif piece[1] == 'Q':
-            if self.move_Bishop(prev_x, prev_y, x, y) or self.move_Rook(prev_x, prev_y, x, y):
-                return True
+            self.move_Bishop(prev_x, prev_y)
+            self.move_Rook(prev_x, prev_y)
 
         #king movement
         elif piece[1] == 'K':
-            return self.move_King(prev_x, prev_y, x, y)
+            self.move_King(prev_x, prev_y)
 
         #knight movement
         elif piece[1] == "N":
-            return self.move_Knight(prev_x, prev_y, x, y)
+            self.move_Knight(prev_x, prev_y)
 
-        return False
 
-    def move_Pawn(self, prev_x, prev_y, x, y):
+    def move_Pawn(self, prev_x, prev_y):
+
+        enemy_color = {}
+        enemy_color["w"] = "b"
+        enemy_color["b"] = "w"
+
         piece = self.board[prev_x][prev_y]
         parity = 1
+        
         #if a pawn is black
         if piece[0] == 'b':
             parity = -1
@@ -141,191 +159,161 @@ class Chess:
             else:
                 valid_moves = [1]
             
-        else:
+        elif piece[0] == 'w':
             if prev_x == 6:
                 valid_moves = [1,2]
             else:
                 valid_moves = [1]
 
+        #UP MOVEMENT
         for i in range(len(valid_moves)):
-            #pawn up movement
-            if (prev_x - (parity * valid_moves[i]) ) == x and y == prev_y and self.board[x][y] == "":
-                return True
+            if MIN_INDEX <= (prev_x - (parity * valid_moves[i])) <= MAX_INDEX and MIN_INDEX <= prev_y <= MAX_INDEX and self.board[prev_x - (parity * valid_moves[i])][prev_y] == "--":
+                self.possible_moves.append([prev_x - (parity * valid_moves[i]), prev_y])
 
-        #pawn up - right movement
-        pawn_x = prev_x - (parity * 1)
-        pawn_y = prev_y + (parity * 1)
+        #RIGHT CAPTURE
 
-        if pawn_x == x and pawn_y == y and self.board[x][y] != "":
-            return True
+        if MIN_INDEX <= (prev_x - parity) <= MAX_INDEX and MIN_INDEX <= (prev_y + parity) <= MAX_INDEX and self.board[prev_x - parity][prev_y + parity][0] == enemy_color[self.board[prev_x][prev_y][0]]:
+            self.possible_moves.append([prev_x - parity, prev_y + parity])
             
-        #pawn up - left movement
-        pawn_x = prev_x - (parity * 1)
-        pawn_y = prev_y - (parity * 1)
+        #LEFT CAPTURE
 
+        if  MIN_INDEX <= (prev_x - parity) <= MAX_INDEX and MIN_INDEX <= (prev_y - parity) <= MAX_INDEX and  self.board[prev_x - parity][prev_y - parity][0] == enemy_color[self.board[prev_x][prev_y][0]]:
+            self.possible_moves.append([prev_x - parity, prev_y - parity])
         
-        if pawn_x == x and pawn_y == y and self.board[x][y] != "":
-            return True
+        #en passant
 
-    def move_Rook(self, prev_x, prev_y, x, y):
-            
+        #promotion
+
+    def move_Rook(self, prev_x, prev_y):
+        print("moving rook")
+        
+        enemy_color = {}
+        enemy_color["w"] = "b"
+        enemy_color["b"] = "w"
+        
         #horizontal movement
-        if (x == prev_x and (y >= 0 and y <= 8) ):
+        for i in range(prev_y + 1, 8):
+            
+            if self.board[prev_x][i][0] != '-' and self.board[prev_x][i][0] == enemy_color[self.board[prev_x][prev_y][0]]:
+                self.possible_moves.append([prev_x, i])
+                break
+            elif self.board[prev_x][i][0] != '-' and self.board[prev_x][i][0] == self.board[prev_x][prev_y][0]:
+                break
+            self.possible_moves.append([prev_x, i])
 
-            if y - prev_y > 0:
-                print("going right")
-                for i in range(prev_y + 1, y):
-                    if self.board[x][i] != "":
-                        return False
-            else:
-                print("going left")
-                for i in range(y + 1, prev_y):
-                    if self.board[x][i] != "":
-                        return False
 
-            return True
+    
+        for i in range(prev_y - 1, -1, -1):
+            
+            if self.board[prev_x][i][0] != '-' and self.board[prev_x][i][0] == enemy_color[self.board[prev_x][prev_y][0]]:
+                self.possible_moves.append([prev_x, i])
+                break
+            elif self.board[prev_x][i][0] != '-' and self.board[prev_x][i][0] == self.board[prev_x][prev_y][0]:
+                break
+            self.possible_moves.append([prev_x, i])
                 
         #vertical movement
-        elif (y == prev_y and (x >= 0 and x <= 8) ):
+        for i in range(prev_x + 1, 8):
+
+            if self.board[prev_x][i][0] != '-' and self.board[i][prev_y][0] == enemy_color[self.board[prev_x][prev_y][0]]:
+                self.possible_moves.append([i, prev_y])
+                break
+            elif self.board[i][prev_y][0] != '-' and self.board[i][prev_y][0] == self.board[prev_x][prev_y][0]:
+                break
+            self.possible_moves.append([i, prev_y])
             
-            #check for blocked paths
-            if x - prev_x > 0:
-                print("going down")
-                for i in range(prev_x + 1, x):
-                    if self.board[i][y] != "":
-                        return False
-            else:
-                print("going up")
-                for i in range(x + 1, prev_x):
-                    if self.board[i][y] != "":
-                        return False
+    
+        for i in range(prev_x - 1, -1, -1):
 
-            return True
+            if self.board[i][prev_y][0] != '-' and self.board[i][prev_y][0] == enemy_color[self.board[prev_x][prev_y][0]]:
+                self.possible_moves.append([i, prev_y])
+                break
+            elif self.board[i][prev_y][0] != '-' and self.board[i][prev_y][0] == self.board[prev_x][prev_y][0]:
+                break
 
-    def move_Bishop(self, prev_x, prev_y, x, y):
+            self.possible_moves.append([i, prev_y])
 
+    def move_Bishop(self, prev_x, prev_y):
+        enemy_color = {}
+        enemy_color["w"] = "b"
+        enemy_color["b"] = "w"
+      
         #Down right
-        if ((x - prev_x == y - prev_y) and (x - prev_x > 0)):
-            
-            print("b down right move")
+        x, y = prev_x + 1, prev_y + 1
+
+        while(0 <= x < 8 and 0 <= y < 8):
+            if self.board[x][y][0] != '-' and self.board[x][y][0] == enemy_color[self.board[prev_x][prev_y][0]]:
+                self.possible_moves.append([x, y])
+                break
+            elif self.board[x][y][0] != '-' and self.board[x][y][0] == self.board[prev_x][prev_y][0]:
+                break
+            self.possible_moves.append([x, y])
+            x+=1
+            y+=1
+
         
-            value = x - prev_x
-
-            for i in range(1, y - prev_y):
-                if self.board[prev_x + i][prev_y + i] != "":
-                    return False
-                print(prev_x + i, prev_y + i)
-                    
-            if (value) >= 1 and (value) <= 8:
-                return True
-                    
-
         #Down left
-        elif ((x - prev_x == prev_y - y) and (x - prev_x > 0)):
-            print("b down left move")
-
-            for i in range(1, prev_y - y):
-                if self.board[prev_x + i][prev_y - i] != "":
-                    return False
-                
-                print(prev_x + i, prev_y - i)
-
-            value = x - prev_x
-            if (value) >= 1 and (value) <= 8:
-                return True
+        x, y = prev_x + 1, prev_y - 1
+        while(0 <= x < 8 and 0 <= y < 8):
+            if self.board[x][y][0] != '-' and self.board[x][y][0] == enemy_color[self.board[prev_x][prev_y][0]]:
+                self.possible_moves.append([x, y])
+                break
+            elif self.board[x][y][0] != '-' and self.board[x][y][0] == self.board[prev_x][prev_y][0]:
+                break
+            self.possible_moves.append([x, y])
+            x+=1
+            y-=1
 
         #Up right
-        elif (prev_x - x == y - prev_y):
-            print("b up right move")
+        x, y = prev_x - 1, prev_y + 1
+        while(0 <= x < 8 and 0 <= y < 8):
+            if self.board[x][y][0] != '-' and self.board[x][y][0] == enemy_color[self.board[prev_x][prev_y][0]]:
+                self.possible_moves.append([x, y])
+                break
+            elif self.board[x][y][0] != '-' and self.board[x][y][0] == self.board[prev_x][prev_y][0]:
+                break
+            self.possible_moves.append([x, y])
 
-            for i in range(1, y - prev_y):
-               
-                if self.board[prev_x - i][prev_y + i] != "":
-                    return False
-                print(prev_x - i, prev_y + i)
-            value = prev_x - x
-            if (value) >= 1 and (value) <= 8:
-                return True
+            x-=1
+            y+=1
+        
 
         #Up left
-        elif (prev_x - x == prev_y - y):
-            print("b up left move")
-            
-            for i in range(1, prev_y - y):
-                print(prev_x - i, prev_y - i)
-                if self.board[prev_x - i][prev_y - i] != "":
-                    return False
+        x, y = prev_x - 1, prev_y - 1
+        while(0 <= x < 8 and 0 <= y < 8):
+            if self.board[x][y][0] != '-' and self.board[x][y][0] == enemy_color[self.board[prev_x][prev_y][0]]:
+                self.possible_moves.append([x, y])
+                break
+            elif self.board[x][y][0] != '-' and self.board[x][y][0] == self.board[prev_x][prev_y][0]:
+                break
+            self.possible_moves.append([x, y])
+            x-=1
+            y-=1
 
-            value = prev_x - x
-            if (value) >= 1 and (value) <= 8:
-                return True
+    def move_Knight(self, prev_x, prev_y):
 
-    def move_Knight(self, prev_x, prev_y, x, y):
+        all_knight_pos = [[prev_x - 2, prev_y + 1], [prev_x - 1, prev_y + 2], [prev_x - 2, prev_y - 1], [prev_x - 1, prev_y - 2], [prev_x + 2, prev_y - 1], [prev_x + 1, prev_y - 2], [prev_x + 2, prev_y + 1], [prev_x + 1, prev_y + 2]]
 
-        #up right - 1
-        if x == prev_x - 2 and y == prev_y + 1:
-            return True
+        for x,y in all_knight_pos:
+            if x < 8 and y < 8:
+                
+                if self.board[x][y][0] != '-' and self.board[x][y][0] == self.board[prev_x][prev_y][0]:
+                    continue
+
+                self.possible_moves.append([x,y])
+
+    def move_King(self, prev_x, prev_y):
+
+        all_king_pos = [[prev_x - 1, prev_y], [prev_x - 1, prev_y - 1], [prev_x - 1, prev_y + 1], [prev_x, prev_y - 1], [prev_x, prev_y + 1], [prev_x + 1, prev_y - 1], [prev_x + 1, prev_y], [prev_x + 1, prev_y + 1]]
         
-        #up right - 2
-        elif x == prev_x - 1 and y == prev_y + 2:
-            return True
+        for x,y in all_king_pos:
+            if x < 8 and y < 8:
+                
+                if self.board[x][y][0] != '-' and self.board[x][y][0] == self.board[prev_x][prev_y][0]:
+                    continue
 
-        #up left - 1
-        elif x == prev_x - 2 and y == prev_y - 1:
-            return True
-        
-        #up left - 2
-        elif x == prev_x - 1 and y == prev_y - 2:
-            return True
+                self.possible_moves.append([x,y])
 
-        #down left - 1
-        elif x == prev_x + 2 and y == prev_y - 1:
-            return True
-
-        #down left - 2
-        elif x == prev_x + 1 and y == prev_y - 2:
-            return True
-
-        #down right - 1
-        elif x == prev_x + 2 and y == prev_y + 1:
-            return True
-        
-        #down right - 2
-        elif x == prev_x + 1 and y == prev_y + 2:
-            return True
-
-    def move_King(self, prev_x, prev_y, x, y):
-        #up
-        if x == prev_x - 1 and y == prev_y:
-            return True
-
-        #up left
-        elif x == prev_x - 1 and y == prev_y - 1:
-            return True
-        
-        #up right
-        elif x == prev_x - 1 and y == prev_y + 1:
-            return True
-        
-        #left
-        elif x == prev_x and y == prev_y - 1:
-            return True
-        
-        #right
-        elif x == prev_x and y == prev_y + 1:
-            return True
-        
-        #down left
-        elif x == prev_x + 1 and y == prev_y - 1:
-            return True
-
-        #down
-        elif x == prev_x + 1 and y == prev_y:
-            return True
-
-        #down right
-        elif x == prev_x + 1 and y == prev_y + 1:
-            return True
     
     def Multi_player(self):
 
@@ -352,13 +340,14 @@ class Chess:
                     self.prev_x = self.x
                     self.prev_y = self.y
 
-                    if self.board[self.x][self.y] != "":
+
+                    if self.board[self.x][self.y] != "--":
                         
-                        chess_piece_color = ["w", "b"]
+                        # chess_piece_color = ["w", "b"]
                         
-                        if chess_piece_color[Turns % 2] != self.board[self.x][self.y][0]:
-                            print(self.color[chess_piece_color[Turns % 2]], "Turn !!!!!!!!!")
-                            continue
+                        # if chess_piece_color[Turns % 2] != self.board[self.x][self.y][0]:
+                        #     print(self.color[chess_piece_color[Turns % 2]], "Turn !!!!!!!!!")
+                        #     continue
 
                         selected_piece = True
                         print(self.board[self.x][self.y], "selected at pos", self.x, self.y)
@@ -366,7 +355,7 @@ class Chess:
 
                 #when a selected piece is dropped on a location
                 elif event.type == pygame.MOUSEBUTTONUP and selected_piece == True:
-                    print(self.possible_moves)
+        
                     self.y,self.x = pygame.mouse.get_pos()
                     self.x = int(self.x / sq_size)
                     self.y = int(self.y / sq_size)
@@ -377,47 +366,24 @@ class Chess:
                     print("left at", self.x, self.y)
                     
                     #if the move is valid, move the selected piece to where the user wants to place it on the board then clear the prev piece
-                    if self.valid_move_check(self.prev_x, self.prev_y, self.x, self.y):
-                        x = self.x
-                        y = self.y
+                    self.valid_move_check(self.prev_x, self.prev_y, self.x, self.y)
+
+                    x = self.x
+                    y = self.y
+
+                    if [x,y] in self.possible_moves:
                         
                         self.board[self.x][self.y] = self.board[self.prev_x][self.prev_y]
-                        self.board[self.prev_x][self.prev_y] = ""
+                        self.board[self.prev_x][self.prev_y] = "--"
                         
-                        #update king pos if its moved to a new location
-                        if self.board[self.x][self.y] == "wK":
-                            self.whiteKing_pos = [self.x,self.y]
-                        elif self.board[self.x][self.y] == "bK":
-                            self.blackKing_pos = [self.x,self.y]
-                        
-                        king_pos = self.get_kings_pos(x, y)
-
-                        #confirm if the opposing king is checked whenever any chess piece is moved
-                        if self.is_checked(self.x, self.y, king_pos[0], king_pos[1]):
-                            print(self.board[self.x][self.y], "checked", self.board[king_pos[0]][king_pos[1]])
-
-                            for i in range(8):
-                                for j in range(8):
-
-                                    #insert valid king moves into a list by placing the king to each cord on the board and checking if its a valid move or not
-                                    if self.valid_move_check(king_pos[0], king_pos[1], i, j):
-                                        if [i,j] not in self.possible_moves:
-                                            self.possible_moves.append([i,j])
-                                        
-                                        #if the king is being checked at i,j remove it from the king's possible moves as it cant move to a location that is in check
-                                        if self.is_checked(self.x, self.y, i, j):
-                                            self.possible_moves.remove([i,j])
-
-                            #if the king is in check and there are no possible moves left for the king, end the game and display a checkmate message
-                            if len(self.possible_moves) == 0:
-                                print("Checkmate!", self.color[self.board[self.x][self.y][0]], "wins")
-                                exit()
-                                        
+                       
                         print(self.possible_moves)
-                        self.possible_moves.clear()
                         Turns += 1
                     else:
+                        self.possible_moves.clear()
                         continue
+
+                    self.possible_moves.clear()
                 
                     
             #draw chess board and pieces

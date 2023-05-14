@@ -1,7 +1,7 @@
 import pygame
 from const import *
 
-class chess_piece:
+class Move:
     def __init__(self, start, end, board):
         self.prev_x = start[0]
         self.prev_y = start[1]
@@ -10,6 +10,13 @@ class chess_piece:
 
         self.piece_moved = board[self.prev_x][self.prev_y]
         self.piece_captured = board[self.x][self.y]
+
+    def __eq__(self, other):
+        if isinstance(other, Move):
+            return self.prev_x == other.prev_x and self.prev_y == other.prev_y and self.x == other.x and self.y == other.y
+        
+        return False
+
 
 class Chess:
     def __init__(self):
@@ -48,7 +55,7 @@ class Chess:
         self.window = pygame.display.set_mode((width, height))
         pygame.display.set_caption("CHESS")
 
-        #add the unique chess pieces to chess_pieces variable
+        #add the unique chess pieces to moves variable
         self.chess_pieces = list(set(self.board[0])) + list(set(self.board[1])) + list(set(self.board[6])) + list(set(self.board[7]))
 
         self.prev_x = 0
@@ -58,17 +65,20 @@ class Chess:
         self.whiteKing_pos = [7,4]
         self.blackKing_pos = [0,4]
         
-        # self.function_dic = {'p': self.move_Pawn()}
+        self.function_dic = {'p': lambda prev_x, prev_y, possible_moves : self.move_Pawn(prev_x, prev_y, possible_moves)}
+
         self.move_Log = []
-        self.white_Turn = True
+        self.white_Turn = False
             
         
 
     #maps the pieces to their respective loaded image
     def load_imgs(self):
         for piece in self.chess_pieces:
-            self.images[piece] = pygame.transform.scale(pygame.image.load("images/" + piece + ".png"), (sq_size, sq_size))
+            if piece != "--":
+                self.images[piece] = pygame.transform.scale(pygame.image.load("images/" + piece + ".png"), (sq_size, sq_size))
 
+    #draws an empty board
     def draw_board(self):
         colors = [pygame.Color("white"), pygame.Color("grey")]
         for r in range(8):
@@ -77,6 +87,7 @@ class Chess:
                 color = colors[((r+c) % 2)]
                 pygame.draw.rect(self.window, color, pygame.Rect(c*sq_size, r*sq_size, sq_size, sq_size))
 
+    #loads the images of pieces onto the board
     def draw_pieces(self):
         for r in range(8):
             for c in range(8):
@@ -87,41 +98,9 @@ class Chess:
         self.draw_board()
         self.draw_pieces()
 
-    def get_Possible_Moves(self, prev_x, prev_y):
-
-        piece = self.board[prev_x][prev_y]
-        moves = []
-
-        #Pawn movement
-        if piece[1] == 'p':
-            self.move_Pawn(prev_x, prev_y, moves)
-
-        #Bishop movement
-        elif piece[1] == 'B':
-            self.move_Bishop(prev_x, prev_y, moves)
-
-        #Rook movement
-        elif piece[1] == 'R':
-            self.move_Rook(prev_x, prev_y, moves)
-        
-        #queen movement is a combination of rook and bishop movement
-        elif piece[1] == 'Q':
-            self.move_Bishop(prev_x, prev_y, moves)
-            self.move_Rook(prev_x, prev_y, moves)
-
-        #king movement
-        elif piece[1] == 'K':
-            self.move_King(prev_x, prev_y, moves)
-
-        #knight movement
-        elif piece[1] == "N":
-            self.move_Knight(prev_x, prev_y, moves)
-
-        return moves
-
-
     def move_Pawn(self, prev_x, prev_y, possible_moves):
-
+        
+        
         enemy_color = {}
         enemy_color["w"] = "b"
         enemy_color["b"] = "w"
@@ -146,17 +125,17 @@ class Chess:
         #UP MOVEMENT
         for i in range(len(valid_moves)):
             if MIN_INDEX <= (prev_x - (parity * valid_moves[i])) <= MAX_INDEX and MIN_INDEX <= prev_y <= MAX_INDEX and self.board[prev_x - (parity * valid_moves[i])][prev_y] == "--":
-                possible_moves.append([prev_x - (parity * valid_moves[i]), prev_y])
+                possible_moves.append(Move([prev_x, prev_y], [prev_x - (parity * valid_moves[i]), prev_y], self.board))
 
         #RIGHT CAPTURE
 
         if MIN_INDEX <= (prev_x - parity) <= MAX_INDEX and MIN_INDEX <= (prev_y + parity) <= MAX_INDEX and self.board[prev_x - parity][prev_y + parity][0] == enemy_color[self.board[prev_x][prev_y][0]]:
-            possible_moves.append([prev_x - parity, prev_y + parity])
+            possible_moves.append(Move([prev_x, prev_y], [prev_x - parity, prev_y + parity], self.board))
             
         #LEFT CAPTURE
 
         if  MIN_INDEX <= (prev_x - parity) <= MAX_INDEX and MIN_INDEX <= (prev_y - parity) <= MAX_INDEX and  self.board[prev_x - parity][prev_y - parity][0] == enemy_color[self.board[prev_x][prev_y][0]]:
-            possible_moves.append([prev_x - parity, prev_y - parity])
+            possible_moves.append( Move([prev_x, prev_y], [prev_x - parity, prev_y - parity], self.board))
         
         #en passant
 
@@ -172,43 +151,43 @@ class Chess:
         for i in range(prev_y + 1, 8):
             
             if self.board[prev_x][i][0] != '-' and self.board[prev_x][i][0] == enemy_color[self.board[prev_x][prev_y][0]]:
-                possible_moves.append([prev_x, i])
+                possible_moves.append( Move([prev_x, prev_y],[prev_x, i], self.board))
                 break
             elif self.board[prev_x][i][0] != '-' and self.board[prev_x][i][0] == self.board[prev_x][prev_y][0]:
                 break
-            possible_moves.append([prev_x, i])
+            possible_moves.append( Move([prev_x, prev_y],[prev_x, i], self.board))
 
 
     
         for i in range(prev_y - 1, -1, -1):
             
             if self.board[prev_x][i][0] != '-' and self.board[prev_x][i][0] == enemy_color[self.board[prev_x][prev_y][0]]:
-                possible_moves.append([prev_x, i])
+                possible_moves.append( Move([prev_x, prev_y],[prev_x, i], self.board))
                 break
             elif self.board[prev_x][i][0] != '-' and self.board[prev_x][i][0] == self.board[prev_x][prev_y][0]:
                 break
-            possible_moves.append([prev_x, i])
+            possible_moves.append( Move([prev_x, prev_y],[prev_x, i], self.board))
                 
         #vertical movement
         for i in range(prev_x + 1, 8):
 
             if self.board[prev_x][i][0] != '-' and self.board[i][prev_y][0] == enemy_color[self.board[prev_x][prev_y][0]]:
-                possible_moves.append([i, prev_y])
+                possible_moves.append( Move([prev_x, prev_y],[i, prev_y], self.board))
                 break
             elif self.board[i][prev_y][0] != '-' and self.board[i][prev_y][0] == self.board[prev_x][prev_y][0]:
                 break
-            possible_moves.append([i, prev_y])
+            possible_moves.append( Move([prev_x, prev_y],[i, prev_y], self.board))
             
     
         for i in range(prev_x - 1, -1, -1):
 
             if self.board[i][prev_y][0] != '-' and self.board[i][prev_y][0] == enemy_color[self.board[prev_x][prev_y][0]]:
-                possible_moves.append([i, prev_y])
+                possible_moves.append( Move([prev_x, prev_y],[i, prev_y], self.board))
                 break
             elif self.board[i][prev_y][0] != '-' and self.board[i][prev_y][0] == self.board[prev_x][prev_y][0]:
                 break
 
-            possible_moves.append([i, prev_y])
+            possible_moves.append( Move([prev_x, prev_y],[i, prev_y], self.board))
 
     def move_Bishop(self, prev_x, prev_y, possible_moves):
         enemy_color = {}
@@ -220,11 +199,11 @@ class Chess:
 
         while(0 <= x < 8 and 0 <= y < 8):
             if self.board[x][y][0] != '-' and self.board[x][y][0] == enemy_color[self.board[prev_x][prev_y][0]]:
-                possible_moves.append([x, y])
+                possible_moves.append( Move([prev_x, prev_y],[x, y], self.board))
                 break
             elif self.board[x][y][0] != '-' and self.board[x][y][0] == self.board[prev_x][prev_y][0]:
                 break
-            possible_moves.append([x, y])
+            possible_moves.append( Move([prev_x, prev_y],[x, y], self.board))
             x+=1
             y+=1
 
@@ -233,11 +212,11 @@ class Chess:
         x, y = prev_x + 1, prev_y - 1
         while(0 <= x < 8 and 0 <= y < 8):
             if self.board[x][y][0] != '-' and self.board[x][y][0] == enemy_color[self.board[prev_x][prev_y][0]]:
-                possible_moves.append([x, y])
+                possible_moves.append( Move([prev_x, prev_y],[x, y], self.board))
                 break
             elif self.board[x][y][0] != '-' and self.board[x][y][0] == self.board[prev_x][prev_y][0]:
                 break
-            possible_moves.append([x, y])
+            possible_moves.append( Move([prev_x, prev_y],[x, y], self.board))
             x+=1
             y-=1
 
@@ -245,11 +224,11 @@ class Chess:
         x, y = prev_x - 1, prev_y + 1
         while(0 <= x < 8 and 0 <= y < 8):
             if self.board[x][y][0] != '-' and self.board[x][y][0] == enemy_color[self.board[prev_x][prev_y][0]]:
-                possible_moves.append([x, y])
+                possible_moves.append( Move([prev_x, prev_y],[x, y], self.board))
                 break
             elif self.board[x][y][0] != '-' and self.board[x][y][0] == self.board[prev_x][prev_y][0]:
                 break
-            possible_moves.append([x, y])
+            possible_moves.append( Move([prev_x, prev_y],[x, y], self.board))
 
             x-=1
             y+=1
@@ -259,11 +238,11 @@ class Chess:
         x, y = prev_x - 1, prev_y - 1
         while(0 <= x < 8 and 0 <= y < 8):
             if self.board[x][y][0] != '-' and self.board[x][y][0] == enemy_color[self.board[prev_x][prev_y][0]]:
-                possible_moves.append([x, y])
+                possible_moves.append( Move([prev_x, prev_y],[x, y], self.board))
                 break
             elif self.board[x][y][0] != '-' and self.board[x][y][0] == self.board[prev_x][prev_y][0]:
                 break
-            possible_moves.append([x, y])
+            possible_moves.append( Move([prev_x, prev_y],[x, y], self.board))
             x-=1
             y-=1
 
@@ -277,7 +256,7 @@ class Chess:
                 if self.board[x][y][0] != '-' and self.board[x][y][0] == self.board[prev_x][prev_y][0]:
                     continue
 
-                possible_moves.append([x,y])
+                possible_moves.append( Move([prev_x, prev_y],[x, y], self.board))
 
     def move_King(self, prev_x, prev_y, possible_moves):
 
@@ -289,30 +268,24 @@ class Chess:
                 if self.board[x][y][0] != '-' and self.board[x][y][0] == self.board[prev_x][prev_y][0]:
                     continue
 
-                possible_moves.append([x,y])
+                possible_moves.append( Move([prev_x, prev_y],[x, y], self.board))
 
     def undo_move(self):
         if len(self.move_Log) != 0:
 
-            self.white_Turn = not self.white_Turn
             move = self.move_Log.pop()
-
-            prev_x = move[0][0]
-            prev_y = move[0][1]
             
-            x = move[1][0]
-            y = move[1][1]
+            self.board[move.prev_x][move.prev_y] = move.piece_moved
+            self.board[move.x][move.y] = move.piece_captured
 
-            piece_captured = move[2]
+            self.white_Turn = not self.white_Turn
+
+            if move.piece_moved == "wK":
+                self.whiteKing_pos = [move.prev_x, move.prev_y]
+
+            elif move.piece_moved == "bK":
+                self.blackKing_pos = [move.prev_x, move.prev_y]
             
-            self.board[prev_x][prev_y] = self.board[x][y]
-            self.board[x][y] = piece_captured
-
-            if self.board[prev_x][prev_y] == "wK":
-                self.whiteKing_pos = [[prev_x, prev_y]]
-
-            elif self.board[prev_x][prev_y] == "bK":
-                self.blackKing_pos = [[prev_x, prev_y]]
 
     def generate_all_possible_moves(self):
         moves = []
@@ -320,33 +293,113 @@ class Chess:
             for j in range(8):
                 turn = self.board[i][j][0]
                 if (self.white_Turn == True and turn == "w") or (not self.white_Turn and turn == "b"):
-                    moves += self.get_Possible_Moves(i,j)
+                    piece = self.board[i][j]
+                    #Pawn movement
+                    if piece[1] == 'p':
+                        self.move_Pawn(i, j, moves)
+
+                    #Bishop movement
+                    elif piece[1] == 'B':
+                        self.move_Bishop(i, j, moves)
+
+                    #Rook movement
+                    elif piece[1] == 'R':
+                        self.move_Rook(i, j, moves)
+                    
+                    #queen movement is a combination of rook and bishop movement
+                    elif piece[1] == 'Q':
+                        self.move_Bishop(i, j, moves)
+                        self.move_Rook(i, j, moves)
+
+                    #king movement
+                    elif piece[1] == 'K':
+                        self.move_King(i, j, moves)
+
+                    #knight movement
+                    elif piece[1] == 'N':
+                        self.move_Knight(i, j, moves)
 
         return moves
 
-    def get_valid_moves(self):
-        moves = self.generate_all_possible_moves()
+    def in_check(self):
+        if self.white_Turn:
+            
+            return self.under_attack(self.whiteKing_pos[0], self.whiteKing_pos[1])
+        else:
+           
+            return self.under_attack(self.blackKing_pos[0], self.blackKing_pos[1])
+        
+    def under_attack(self, r, c):
+        self.white_Turn = not self.white_Turn
 
-        for i in range(len(moves)-1, -1, -1):
-            self.place_piece()
+        opp_moves = self.generate_all_possible_moves()
+        
+        self.white_Turn = not self.white_Turn
+        for move in opp_moves:
+            if move.x == r and move.y == c:
+                return True
+        return False
+
+    def get_valid_moves(self):
+        #make sure to remove the kings moves if that position is under attack
+        moves = self.generate_all_possible_moves()
+        
+        for i in range(len(moves) - 1, -1, -1):
+            #make a move for each possible move
+            self.place_piece(moves[i])
+
+            self.white_Turn = not self.white_Turn
+            kingpos = self.whiteKing_pos if self.white_Turn else self.blackKing_pos
+            self.white_Turn = not self.white_Turn
+            
+            #generate all enemy moves
+            opp_moves = self.generate_all_possible_moves()
+
+            #for each possible move find the opponent moves that target the king
+            for move in opp_moves:
+                if move.x is kingpos[0] and move.y is kingpos[1]:
+                    print("king is targeted, removing move", moves[i].x, moves[i].y)
+                    moves.remove(moves[i])
+
+            #undo the move made
+            self.undo_move()
+        return moves
+
+        
+
+        # #backwards traversal to make it easier to delete 
+        # for i in range(len(moves) - 1, -1, -1):
+            
+        #     self.place_piece(moves[i])
+
+        #     self.white_Turn = not self.white_Turn
+        #     if self.in_check():
+        #         moves.remove(moves[i])
+        #     self.white_Turn = not self.white_Turn
+            
+        #     self.undo_move()
+            
+        # return moves
     
-    def place_piece(self, prev_x, prev_y, x, y):
-        piece_captured = self.board[x][y]
-        self.board[x][y] = self.board[prev_x][prev_y]
-        self.board[prev_x][prev_y] = "--"
+    def place_piece(self, move):
+        self.board[move.prev_x][move.prev_y] = "--"
+        self.board[move.x][move.y] = move.piece_moved
 
         #track moves so we can undo later
-        self.move_Log.append([[prev_x, prev_y], [x, y], piece_captured])
+        self.move_Log.append(move)
 
-        if self.board[x][y] == "wK":
-            self.whiteKing_pos = [[x, y]]
+        #change turn for every move made
+        self.white_Turn = not self.white_Turn
 
-        elif self.board[x][y] == "bK":
-            self.blackKing_pos = [[x, y]]
+        if move.piece_moved == "wK":
+            self.whiteKing_pos = [move.x, move.y]
+
+        elif move.piece_moved == "bK":
+            self.blackKing_pos = [move.x, move.y]
         
     
     def Multi_player(self):
-
+        moves = []
         run = True
         clock = pygame.time.Clock()
         self.load_imgs()
@@ -361,7 +414,7 @@ class Chess:
                 
                 #handle events when a chess piece is selected
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    
+                
                     self.y,self.x = pygame.mouse.get_pos()
                     self.x = int(self.x / sq_size)
                     self.y = int(self.y / sq_size)
@@ -382,40 +435,30 @@ class Chess:
 
                 #when a selected piece is dropped on a location
                 elif event.type == pygame.MOUSEBUTTONUP and selected_piece == True:
-        
+                    
                     self.y,self.x = pygame.mouse.get_pos()
                     self.x = int(self.x / sq_size)
                     self.y = int(self.y / sq_size)
-                    
-                    #if a chess piece was dropped successfully set the boolean to false
-                    selected_piece = False
 
                     print("left at", self.x, self.y)
-                    
-                    #get the possible moves for 
-                    moves = self.get_Possible_Moves(self.prev_x, self.prev_y)
+        
+                    #store all the valid moves for either black or white depending on whos turn it is
+                    if not (self.prev_x is self.x and self.prev_y is self.y):
+                        moves = self.get_valid_moves()
 
                     x = self.x
                     y = self.y
 
-                    if [x,y] in moves:
-                        
-                        self.place_piece(self.prev_x, self.prev_y, self.x, self.y)
-                        
-                        print("black king pos:", self.blackKing_pos, "white king pos:", self.whiteKing_pos)
-                        print("Possible moves:", moves)
-                        self.generate_all_possible_moves()
-
-
-                        #change turn for every move made
-                        self.white_Turn = not self.white_Turn
-
-                    else:
-                        continue
+                    user_move = Move([self.prev_x, self.prev_y], [x, y], self.board)
+                    
+                    #if the user move is a valid move place the piece on the board
+                    if user_move in moves:
+                        self.place_piece(user_move)
+                        #if a chess piece was dropped successfully set the boolean to false
+                        selected_piece = False
                 
                 #undo when 'z' is clicked
                 elif event.type == pygame.KEYDOWN and event.key == pygame.K_z:
-                    
                     self.undo_move()
                 
                     

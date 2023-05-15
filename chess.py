@@ -68,8 +68,7 @@ class Chess:
         self.function_dic = {'p': lambda prev_x, prev_y, possible_moves : self.move_Pawn(prev_x, prev_y, possible_moves)}
 
         self.move_Log = []
-        self.white_Turn = False
-            
+        self.white_Turn = True      
         
 
     #maps the pieces to their respective loaded image
@@ -322,64 +321,52 @@ class Chess:
         return moves
 
     def in_check(self):
-        if self.white_Turn:
-            
-            return self.under_attack(self.whiteKing_pos[0], self.whiteKing_pos[1])
-        else:
-           
-            return self.under_attack(self.blackKing_pos[0], self.blackKing_pos[1])
-        
-    def under_attack(self, r, c):
+        #set kings position to either white or black depending on whos turn it is
+        kingpos = self.whiteKing_pos if self.white_Turn else self.blackKing_pos
+
+        #switch to enemy color to find all possible moves for the enemy
+        self.white_Turn = not self.white_Turn
+        opp_moves = self.generate_all_possible_moves()
         self.white_Turn = not self.white_Turn
 
-        opp_moves = self.generate_all_possible_moves()
-        
-        self.white_Turn = not self.white_Turn
+        #if an enemy move targets the current player's king that means the king is in check so return true otherwise return false
         for move in opp_moves:
-            if move.x == r and move.y == c:
+            if move.x == kingpos[0] and move.y == kingpos[1]:
                 return True
         return False
 
     def get_valid_moves(self):
-        #make sure to remove the kings moves if that position is under attack
+        #generate all possible moves for current player
         moves = self.generate_all_possible_moves()
-        
+
+        #backwards traversal to make it easier to delete moves
         for i in range(len(moves) - 1, -1, -1):
-            #make a move for each possible move
+            
+            #place a chess piece for each possible move
             self.place_piece(moves[i])
 
+            #need to switch turns back to current player since place_piece() function automatically switches the turns
             self.white_Turn = not self.white_Turn
-            kingpos = self.whiteKing_pos if self.white_Turn else self.blackKing_pos
+
+            #remove the current player's possible moves that puts the king in check
+            if self.in_check():
+                moves.remove(moves[i])
+            
+            #switch turns back to opponents POV
             self.white_Turn = not self.white_Turn
             
-            #generate all enemy moves
-            opp_moves = self.generate_all_possible_moves()
-
-            #for each possible move find the opponent moves that target the king
-            for move in opp_moves:
-                if move.x is kingpos[0] and move.y is kingpos[1]:
-                    print("king is targeted, removing move", moves[i].x, moves[i].y)
-                    moves.remove(moves[i])
-
-            #undo the move made
+            #undo the move where the chess piece was placed
             self.undo_move()
-        return moves
-
         
-
-        # #backwards traversal to make it easier to delete 
-        # for i in range(len(moves) - 1, -1, -1):
-            
-        #     self.place_piece(moves[i])
-
-        #     self.white_Turn = not self.white_Turn
+        # #condition for checkmate: if there are no legal moves for the current player and the king is in check
+        # #condition for stalemate: if there are no legal moves for the current player and the king is NOT in check
+        # if len(moves) == 0:
         #     if self.in_check():
-        #         moves.remove(moves[i])
-        #     self.white_Turn = not self.white_Turn
-            
-        #     self.undo_move()
-            
-        # return moves
+        #         print ("checkmate")
+        #     else:
+        #         print ("stalemate")
+
+        return moves
     
     def place_piece(self, move):
         self.board[move.prev_x][move.prev_y] = "--"
@@ -454,6 +441,23 @@ class Chess:
                     #if the user move is a valid move place the piece on the board
                     if user_move in moves:
                         self.place_piece(user_move)
+                        
+                        #after the current player's turn end the game if the enemy is in checkmate or stalemate
+                        opp_moves = self.get_valid_moves()
+
+                        #condition for checkmate: if there are no legal moves for the current player and the king is in check
+                        #condition for stalemate: if there are no legal moves for the current player and the king is NOT in check
+                        if len(opp_moves) == 0:
+
+                            #stop running the game if the game status is either checkmate or stalemate
+                            run = False
+                            if self.in_check():
+                                color = {False: "Black", True: "White"}
+                                print ("Checkmate!", color[not self.white_Turn], "wins!!")
+                                
+                            else:
+                                print ("Stalemate")
+
                         #if a chess piece was dropped successfully set the boolean to false
                         selected_piece = False
                 

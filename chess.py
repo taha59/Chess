@@ -357,14 +357,6 @@ class Chess:
             
             #undo the move where the chess piece was placed
             self.undo_move()
-        
-        # #condition for checkmate: if there are no legal moves for the current player and the king is in check
-        # #condition for stalemate: if there are no legal moves for the current player and the king is NOT in check
-        # if len(moves) == 0:
-        #     if self.in_check():
-        #         print ("checkmate")
-        #     else:
-        #         print ("stalemate")
 
         return moves
     

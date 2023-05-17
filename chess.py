@@ -50,6 +50,16 @@ class Chess:
             ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
         ]
 
+        self.ranks = [
+            ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
+            ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
+            ["a1", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
+        ]
             
         self.images = {}
         self.window = pygame.display.set_mode((width, height))
@@ -378,6 +388,7 @@ class Chess:
         
     
     def Multi_player(self):
+        Game_Over = False
         moves = []
         run = True
         clock = pygame.time.Clock()
@@ -450,8 +461,12 @@ class Chess:
                             else:
                                 print ("Stalemate")
 
+                            Game_Over = True
+
                         #if a chess piece was dropped successfully set the boolean to false
                         selected_piece = False
+
+                        
                 
                 #undo when 'z' is clicked
                 elif event.type == pygame.KEYDOWN and event.key == pygame.K_z:
@@ -462,6 +477,11 @@ class Chess:
             self.chess_graphics()
             pygame.display.update()
             clock.tick(FPS)
+
+            if Game_Over:
+                import sys
+                print ("Press any key to quit")
+                sys.stdin.read(1)
         
         pygame.quit()
 

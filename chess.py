@@ -2,7 +2,7 @@ import pygame
 from const import *
 
 class Move:
-    def __init__(self, start, end, board):
+    def __init__(self, start, end, board, promote_choice = "Q"):
         self.prev_x = start[0]
         self.prev_y = start[1]
         self.x = end[0]
@@ -10,6 +10,12 @@ class Move:
 
         self.piece_moved = board[self.prev_x][self.prev_y]
         self.piece_captured = board[self.x][self.y]
+        self.pawn_promotion = False
+
+        #change the piece_moved var to queen instead of a pawn when promoting
+        if self.piece_moved == "wp" and self.x == 0 or self.piece_moved == "bp" and self.x == 7:
+            self.pawn_promotion = True
+
 
     def __eq__(self, other):
         if isinstance(other, Move):
@@ -39,17 +45,27 @@ class Chess:
         # wQ as white queen
         # wK as white king
         # wp as white pawn
-        self.board = [
-            ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
-            ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
-            ["--", "--", "--", "--", "--", "--", "--", "--"],
-            ["--", "--", "--", "--", "--", "--", "--", "--"],
-            ["--", "--", "--", "--", "--", "--", "--", "--"],
-            ["--", "--", "--", "--", "--", "--", "--", "--"],
-            ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
-            ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
-        ]
+        # self.board = [
+        #     ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
+        #     ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
+        #     ["--", "--", "--", "--", "--", "--", "--", "--"],
+        #     ["--", "--", "--", "--", "--", "--", "--", "--"],
+        #     ["--", "--", "--", "--", "--", "--", "--", "--"],
+        #     ["--", "--", "--", "--", "--", "--", "--", "--"],
+        #     ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
+        #     ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
+        # ]
 
+        self.board = [
+            ["--", "--", "bp", "--", "--", "--", "--", "bK"],
+            ["--", "wp", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "wQ", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["wp", "wp", "bp", "wp", "wp", "wp", "wp", "wp"],
+            ["wR", "wN", "--", "wQ", "wK", "wB", "wN", "wR"]
+        ]
         self.ranks = [
             ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
             ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
@@ -284,6 +300,13 @@ class Chess:
 
             move = self.move_Log.pop()
             
+            #reverse pawn promotion
+            if move.pawn_promotion and move.x == 0:
+                move.piece_moved = "wp"
+
+            elif move.pawn_promotion and move.x == 7:
+                move.piece_moved = "bp"
+
             self.board[move.prev_x][move.prev_y] = move.piece_moved
             self.board[move.x][move.y] = move.piece_captured
 
@@ -370,9 +393,14 @@ class Chess:
 
         return moves
     
-    def place_piece(self, move):
+    def place_piece(self, move, promote_choice = "Q"):
+
+        # options = {"N": "", "B": "", "R": "", "Q": ""}
         self.board[move.prev_x][move.prev_y] = "--"
         self.board[move.x][move.y] = move.piece_moved
+
+        if move.pawn_promotion:
+            self.board[move.x][move.y] = move.piece_moved[0] + promote_choice
 
         #track moves so we can undo later
         self.move_Log.append(move)

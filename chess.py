@@ -45,27 +45,17 @@ class Chess:
         # wQ as white queen
         # wK as white king
         # wp as white pawn
-        # self.board = [
-        #     ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
-        #     ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
-        #     ["--", "--", "--", "--", "--", "--", "--", "--"],
-        #     ["--", "--", "--", "--", "--", "--", "--", "--"],
-        #     ["--", "--", "--", "--", "--", "--", "--", "--"],
-        #     ["--", "--", "--", "--", "--", "--", "--", "--"],
-        #     ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
-        #     ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
-        # ]
-
         self.board = [
-            ["--", "--", "bp", "--", "--", "--", "--", "bK"],
-            ["--", "wp", "--", "--", "--", "--", "--", "--"],
-            ["--", "--", "--", "--", "--", "--", "--", "--"],
-            ["--", "--", "--", "--", "--", "--", "wQ", "--"],
+            ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
+            ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
             ["--", "--", "--", "--", "--", "--", "--", "--"],
             ["--", "--", "--", "--", "--", "--", "--", "--"],
-            ["wp", "wp", "bp", "wp", "wp", "wp", "wp", "wp"],
-            ["wR", "wN", "--", "wQ", "wK", "wB", "wN", "wR"]
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["--", "--", "--", "--", "--", "--", "--", "--"],
+            ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
+            ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
         ]
+
         self.ranks = [
             ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
             ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
@@ -94,7 +84,7 @@ class Chess:
         self.function_dic = {'p': lambda prev_x, prev_y, possible_moves : self.move_Pawn(prev_x, prev_y, possible_moves)}
 
         self.move_Log = []
-        self.white_Turn = True      
+        self.white_Turn = True     
         
 
     #maps the pieces to their respective loaded image
@@ -471,7 +461,14 @@ class Chess:
                     
                     #if the user move is a valid move place the piece on the board
                     if user_move in moves:
-                        self.place_piece(user_move)
+
+                        #if there is a pawn promotion move ask the user what they want their pawn to promote to
+                        if user_move.pawn_promotion:
+                            print ("PROMOTE OPTIONS: queen - Q, rook - R, knight - N, bishop - B")
+                            promotion_Choice = input()
+                            self.place_piece(user_move, promotion_Choice)
+                        else:
+                            self.place_piece(user_move)
                         
                         #after the current player's turn end the game if the enemy is in checkmate or stalemate
                         opp_moves = self.get_valid_moves()

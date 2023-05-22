@@ -2,7 +2,7 @@ import pygame
 from const import *
 
 class Move:
-    def __init__(self, start, end, board, promote_choice = "Q"):
+    def __init__(self, start, end, board, isEnpassantMove = False):
         self.prev_x = start[0]
         self.prev_y = start[1]
         self.x = end[0]
@@ -12,9 +12,14 @@ class Move:
         self.piece_captured = board[self.x][self.y]
         self.pawn_promotion = False
 
-        #change the piece_moved var to queen instead of a pawn when promoting
+        #set pawn promotion to true if a pawn reaches to the end of the board
         if self.piece_moved == "wp" and self.x == 0 or self.piece_moved == "bp" and self.x == 7:
             self.pawn_promotion = True
+
+        self.isEnpassantMove = isEnpassantMove
+        if self.isEnpassantMove:
+            self.piece_captured = "wp" if self.piece_moved == "bp" else "bp"
+        
 
 
     def __eq__(self, other):
@@ -84,7 +89,8 @@ class Chess:
         self.function_dic = {'p': lambda prev_x, prev_y, possible_moves : self.move_Pawn(prev_x, prev_y, possible_moves)}
 
         self.move_Log = []
-        self.white_Turn = True     
+        self.white_Turn = True
+        self.enpassant_Possible = [] #loc where enpassant is possible
         
 
     #maps the pieces to their respective loaded image
@@ -143,18 +149,19 @@ class Chess:
                 possible_moves.append(Move([prev_x, prev_y], [prev_x - (parity * valid_moves[i]), prev_y], self.board))
 
         #RIGHT CAPTURE
-
         if MIN_INDEX <= (prev_x - parity) <= MAX_INDEX and MIN_INDEX <= (prev_y + parity) <= MAX_INDEX and self.board[prev_x - parity][prev_y + parity][0] == enemy_color[self.board[prev_x][prev_y][0]]:
             possible_moves.append(Move([prev_x, prev_y], [prev_x - parity, prev_y + parity], self.board))
-            
-        #LEFT CAPTURE
 
+        elif [prev_x - parity,prev_y + parity] == self.enpassant_Possible:
+            possible_moves.append(Move([prev_x, prev_y], [prev_x - parity, prev_y + parity], self.board, isEnpassantMove=True))
+
+        #LEFT CAPTURE
         if  MIN_INDEX <= (prev_x - parity) <= MAX_INDEX and MIN_INDEX <= (prev_y - parity) <= MAX_INDEX and  self.board[prev_x - parity][prev_y - parity][0] == enemy_color[self.board[prev_x][prev_y][0]]:
             possible_moves.append( Move([prev_x, prev_y], [prev_x - parity, prev_y - parity], self.board))
         
-        #en passant
-
-        #promotion
+        elif [prev_x - parity, prev_y - parity] == self.enpassant_Possible:
+            possible_moves.append(Move([prev_x, prev_y], [prev_x - parity, prev_y - parity], self.board, isEnpassantMove=True))
+    
 
     def move_Rook(self, prev_x, prev_y, possible_moves):
         
@@ -287,7 +294,6 @@ class Chess:
 
     def undo_move(self):
         if len(self.move_Log) != 0:
-
             move = self.move_Log.pop()
             
             #reverse pawn promotion
@@ -308,6 +314,13 @@ class Chess:
             elif move.piece_moved == "bK":
                 self.blackKing_pos = [move.prev_x, move.prev_y]
             
+            if move.isEnpassantMove:
+                self.board[move.x][move.y] = "--"
+                self.board[move.prev_x][move.y] = move.piece_captured
+                self.enpassant_Possible = [move.x, move.y]
+
+            if move.piece_moved[1] == "p" and abs(move.prev_x - move.x) == 2:
+                self.enpassant_Possible = []
 
     def generate_all_possible_moves(self):
         moves = []
@@ -359,6 +372,8 @@ class Chess:
         return False
 
     def get_valid_moves(self):
+
+        temp = self.enpassant_Possible
         #generate all possible moves for current player
         moves = self.generate_all_possible_moves()
 
@@ -381,16 +396,13 @@ class Chess:
             #undo the move where the chess piece was placed
             self.undo_move()
 
+        self.enpassant_Possible = temp
         return moves
     
     def place_piece(self, move, promote_choice = "Q"):
 
-        # options = {"N": "", "B": "", "R": "", "Q": ""}
         self.board[move.prev_x][move.prev_y] = "--"
         self.board[move.x][move.y] = move.piece_moved
-
-        if move.pawn_promotion:
-            self.board[move.x][move.y] = move.piece_moved[0] + promote_choice
 
         #track moves so we can undo later
         self.move_Log.append(move)
@@ -403,6 +415,18 @@ class Chess:
 
         elif move.piece_moved == "bK":
             self.blackKing_pos = [move.x, move.y]
+
+
+        if move.pawn_promotion:
+            self.board[move.x][move.y] = move.piece_moved[0] + promote_choice
+
+        if move.isEnpassantMove:
+            self.board[move.prev_x][move.y] = "--"
+        
+        if move.piece_moved[1] == "p" and abs(move.prev_x - move.x) == 2:
+            self.enpassant_Possible = [(move.prev_x + move.x)//2, move.prev_y]
+        else:
+            self.enpassant_Possible = []
         
     
     def Multi_player(self):
@@ -460,36 +484,38 @@ class Chess:
                     user_move = Move([self.prev_x, self.prev_y], [x, y], self.board)
                     
                     #if the user move is a valid move place the piece on the board
-                    if user_move in moves:
+                    for i in range(len(moves)):
 
-                        #if there is a pawn promotion move ask the user what they want their pawn to promote to
-                        if user_move.pawn_promotion:
-                            print ("PROMOTE OPTIONS: queen - Q, rook - R, knight - N, bishop - B")
-                            promotion_Choice = input()
-                            self.place_piece(user_move, promotion_Choice)
-                        else:
-                            self.place_piece(user_move)
-                        
-                        #after the current player's turn end the game if the enemy is in checkmate or stalemate
-                        opp_moves = self.get_valid_moves()
+                        if user_move == moves[i]:
 
-                        #condition for checkmate: if there are no legal moves for the current player and the king is in check
-                        #condition for stalemate: if there are no legal moves for the current player and the king is NOT in check
-                        if len(opp_moves) == 0:
-
-                            #stop running the game if the game status is either checkmate or stalemate
-                            run = False
-                            if self.in_check():
-                                color = {False: "Black", True: "White"}
-                                print ("Checkmate!", color[not self.white_Turn], "wins!!")
-                                
+                            #if there is a pawn promotion move ask the user what they want their pawn to promote to
+                            if user_move.pawn_promotion:
+                                print ("PROMOTE OPTIONS: queen - Q, rook - R, knight - N, bishop - B")
+                                promotion_Choice = input()
+                                self.place_piece(moves[i], promotion_Choice)
                             else:
-                                print ("Stalemate")
+                                self.place_piece(moves[i])
+                            
+                            #after the current player's turn end the game if the enemy is in checkmate or stalemate
+                            opp_moves = self.get_valid_moves()
 
-                            Game_Over = True
+                            #condition for checkmate: if there are no legal moves for the current player and the king is in check
+                            #condition for stalemate: if there are no legal moves for the current player and the king is NOT in check
+                            if len(opp_moves) == 0:
 
-                        #if a chess piece was dropped successfully set the boolean to false
-                        selected_piece = False
+                                #stop running the game if the game status is either checkmate or stalemate
+                                run = False
+                                if self.in_check():
+                                    color = {False: "Black", True: "White"}
+                                    print ("Checkmate!", color[not self.white_Turn], "wins!!")
+                                    
+                                else:
+                                    print ("Stalemate")
+
+                                Game_Over = True
+
+                            #if a chess piece was dropped successfully set the boolean to false
+                            selected_piece = False
 
                         
                 

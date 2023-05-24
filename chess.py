@@ -2,7 +2,7 @@ import pygame
 from const import *
 
 class Move:
-    def __init__(self, start, end, board, isEnpassantMove = False):
+    def __init__(self, start, end, board, isEnpassantMove = False, isCastleMove = False):
         self.prev_x = start[0]
         self.prev_y = start[1]
         self.x = end[0]
@@ -19,7 +19,8 @@ class Move:
         self.isEnpassantMove = isEnpassantMove
         if self.isEnpassantMove:
             self.piece_captured = "wp" if self.piece_moved == "bp" else "bp"
-        
+
+        self.isCastleMove = isCastleMove
 
 
     def __eq__(self, other):
@@ -28,6 +29,12 @@ class Move:
         
         return False
 
+class CastleRights():
+    def __init__(self, whiteKing_side, blackKing_side, whiteQueen_side, blackQueen_side):
+        self.wks = whiteKing_side
+        self.bks = blackKing_side
+        self.wqs = whiteQueen_side
+        self.bqs = blackQueen_side
 
 class Chess:
     def __init__(self):
@@ -91,6 +98,9 @@ class Chess:
         self.move_Log = []
         self.white_Turn = True
         self.enpassant_Possible = [] #loc where enpassant is possible
+        self.currentCastlingRights = CastleRights(True, True, True, True)
+        self.castleRightsLog = [CastleRights(self.currentCastlingRights.wks, self.currentCastlingRights.bks,
+                                              self.currentCastlingRights.wqs, self.currentCastlingRights.bqs)]
         
 
     #maps the pieces to their respective loaded image
@@ -211,6 +221,7 @@ class Chess:
 
             possible_moves.append( Move([prev_x, prev_y],[i, prev_y], self.board))
 
+
     def move_Bishop(self, prev_x, prev_y, possible_moves):
         enemy_color = {}
         enemy_color["w"] = "b"
@@ -268,6 +279,7 @@ class Chess:
             x-=1
             y-=1
 
+
     def move_Knight(self, prev_x, prev_y, possible_moves):
 
         all_knight_pos = [[prev_x - 2, prev_y + 1], [prev_x - 1, prev_y + 2], [prev_x - 2, prev_y - 1], [prev_x - 1, prev_y - 2], [prev_x + 2, prev_y - 1], [prev_x + 1, prev_y - 2], [prev_x + 2, prev_y + 1], [prev_x + 1, prev_y + 2]]
@@ -280,6 +292,7 @@ class Chess:
 
                 possible_moves.append( Move([prev_x, prev_y],[x, y], self.board))
 
+
     def move_King(self, prev_x, prev_y, possible_moves):
 
         all_king_pos = [[prev_x - 1, prev_y], [prev_x - 1, prev_y - 1], [prev_x - 1, prev_y + 1], [prev_x, prev_y - 1], [prev_x, prev_y + 1], [prev_x + 1, prev_y - 1], [prev_x + 1, prev_y], [prev_x + 1, prev_y + 1]]
@@ -291,7 +304,28 @@ class Chess:
                     continue
 
                 possible_moves.append( Move([prev_x, prev_y],[x, y], self.board))
+    
+    '''
+    appends the castle moves to 'possible_moves'
+    '''
+    def getCastleMoves(self, prev_x, prev_y, possible_moves):
+        #cant castle if king is in check
+        if self.DangerArea(prev_x, prev_y):
+            return 
+        
+        if (self.white_Turn and self.currentCastlingRights.wks) or (not self.white_Turn and self.currentCastlingRights.bks):
+            if self.board[prev_x][prev_y + 1] == "--" and self.board[prev_x][prev_y + 2] == "--":
+                if not self.DangerArea(prev_x, prev_y + 1) and not self.DangerArea(prev_x, prev_y + 2):
+                    possible_moves.append(Move([prev_x, prev_y], [prev_x, prev_y + 2], self.board, isCastleMove= True))
 
+        if (self.white_Turn and self.currentCastlingRights.wqs) or (not self.white_Turn and self.currentCastlingRights.bqs):
+            if self.board[prev_x][prev_y - 1] == "--" and self.board[prev_x][prev_y - 2] == "--" and self.board[prev_x][prev_y - 3]:
+                if not self.DangerArea(prev_x, prev_y - 1) and not self.DangerArea(prev_x, prev_y - 2):
+                    possible_moves.append(Move([prev_x, prev_y], [prev_x, prev_y - 2], self.board, isCastleMove= True))
+
+    '''
+    Undo the last move made
+    '''
     def undo_move(self):
         if len(self.move_Log) != 0:
             move = self.move_Log.pop()
@@ -322,6 +356,26 @@ class Chess:
             if move.piece_moved[1] == "p" and abs(move.prev_x - move.x) == 2:
                 self.enpassant_Possible = []
 
+            #remove the new castling rights when undoing a move and set the current castling rights to the last element in the list
+            self.castleRightsLog.pop()
+
+            #set current castling rights to the last element in the log if undoing a move
+            self.currentCastlingRights.wks = self.castleRightsLog[-1].wks
+            self.currentCastlingRights.wqs = self.castleRightsLog[-1].wqs
+            self.currentCastlingRights.bks = self.castleRightsLog[-1].bks
+            self.currentCastlingRights.bqs = self.castleRightsLog[-1].bqs
+
+            if move.isCastleMove:
+                if move.y - move.prev_y == 2:
+                    self.board[move.x][move.y + 1] = self.board[move.x][move.y - 1]
+                    self.board[move.x][move.y - 1] = "--"
+                else:
+                    self.board[move.x][move.y - 2] = self.board[move.x][move.y + 1]
+                    self.board[move.x][move.y + 1] = "--"
+
+    '''
+    Generates all the possible moves disregarding checks
+    '''
     def generate_all_possible_moves(self):
         moves = []
         for i in range(8):
@@ -356,9 +410,20 @@ class Chess:
 
         return moves
 
+    '''
+    Returns true if king is in check otherwise it returns False
+    '''
     def in_check(self):
         #set kings position to either white or black depending on whos turn it is
         kingpos = self.whiteKing_pos if self.white_Turn else self.blackKing_pos
+
+        #check if king is in the danger area
+        return self.DangerArea(kingpos[0], kingpos[1])
+
+    '''
+    return true if area at location x,y is in danger by the opponent
+    '''
+    def DangerArea(self, x, y):
 
         #switch to enemy color to find all possible moves for the enemy
         self.white_Turn = not self.white_Turn
@@ -367,15 +432,26 @@ class Chess:
 
         #if an enemy move targets the current player's king that means the king is in check so return true otherwise return false
         for move in opp_moves:
-            if move.x == kingpos[0] and move.y == kingpos[1]:
+            if move.x == x and move.y == y:
                 return True
         return False
-
+    
+    '''
+    returns all the valid moves that account for checks
+    '''
     def get_valid_moves(self):
-
+        #save the enpassant and castling rights variable because it is altered while generating possible moves
         temp = self.enpassant_Possible
+        temp2 = CastleRights(self.currentCastlingRights.wks, self.currentCastlingRights.bks
+                             , self.currentCastlingRights.wqs, self.currentCastlingRights.bqs)
+        
         #generate all possible moves for current player
         moves = self.generate_all_possible_moves()
+
+        if self.white_Turn:
+            self.getCastleMoves(self.whiteKing_pos[0], self.whiteKing_pos[1], moves)
+        else:
+            self.getCastleMoves(self.blackKing_pos[0], self.blackKing_pos[1], moves)
 
         #backwards traversal to make it easier to delete moves
         for i in range(len(moves) - 1, -1, -1):
@@ -396,9 +472,15 @@ class Chess:
             #undo the move where the chess piece was placed
             self.undo_move()
 
+        #reclaim the old values of enpassant and csatling rights
         self.enpassant_Possible = temp
+        self.currentCastlingRights = temp2
+
         return moves
     
+    '''
+    Places a piece on the board for a given move. Optional parameter for promotion_choice in case of pawn's promotion
+    '''
     def place_piece(self, move, promote_choice = "Q"):
 
         self.board[move.prev_x][move.prev_y] = "--"
@@ -423,12 +505,56 @@ class Chess:
         if move.isEnpassantMove:
             self.board[move.prev_x][move.y] = "--"
         
+        #if a pawn moves 2 squares forward set the enpassant to the enpassant capture square(middle of pawn moved and placed)
         if move.piece_moved[1] == "p" and abs(move.prev_x - move.x) == 2:
             self.enpassant_Possible = [(move.prev_x + move.x)//2, move.prev_y]
         else:
             self.enpassant_Possible = []
-        
+         
+
+        if move.isCastleMove:
+            #king side castle
+            if move.y - move.prev_y == 2:
+                self.board[move.x][move.y - 1] = self.board[move.x][move.y + 1]
+                self.board[move.x][move.y + 1] = "--"
+            # queen side castle
+            else:
+                self.board[move.x][move.y + 1] = self.board[move.x][move.y - 2]
+                self.board[move.x][move.y - 2] = "--"
+
+        #update castling rights - when a rook or king moves
+        self.updateCastleRights(move)
+        self.castleRightsLog.append(CastleRights(self.currentCastlingRights.wks, self.currentCastlingRights.bks,
+                                              self.currentCastlingRights.wqs, self.currentCastlingRights.bqs))
     
+    '''
+    Updates castle rights when making a move
+    '''
+    def updateCastleRights(self, move):
+
+        if move.piece_moved == "wK":
+            self.currentCastlingRights.wks = False
+            self.currentCastlingRights.wqs = False
+        
+        elif move.piece_moved == "bK":
+            self.currentCastlingRights.bks = False
+            self.currentCastlingRights.bqs = False
+
+        elif move.piece_moved == "wR":
+            if move.prev_x == 7: #left rook
+                if move.prev_y == 0:
+                    self.currentCastlingRights.wqs = False
+                elif move.prev_y == 7: #right rook
+                    self.currentCastlingRights.wks = False
+
+        elif move.piece_moved == "bR":
+            if move.prev_x == 0: #left rook
+                if move.prev_y == 0:
+                    self.currentCastlingRights.bqs = False
+                elif move.prev_y == 7: #right rook
+                    self.currentCastlingRights.bks = False
+
+
     def Multi_player(self):
         Game_Over = False
         moves = []
@@ -496,6 +622,7 @@ class Chess:
                             else:
                                 self.place_piece(moves[i])
                             
+                            # self.gameStatus(Game_Over, run)
                             #after the current player's turn end the game if the enemy is in checkmate or stalemate
                             opp_moves = self.get_valid_moves()
 

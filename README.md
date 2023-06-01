@@ -28,6 +28,7 @@ python3 chess.py
 
 - Click on a piece to select it and drop it to your desired square.
 - Use the mouse to interact with the game interface.
+- Undo a move by clicking 'z' key. You can't undo a move once the game ends in a stalemate or a draw.
 
 ## Features
 
@@ -47,7 +48,3 @@ The code is organized into the following files:
 - `images/`: Directory containing chess piece images.
 
 The main logic of the chess game is implemented in the `Chess` class in the `chess.py` file. It handles the game state, board representation, move validation, and graphical rendering.
-
-## Acknowledgments
-
-- The Pygame library for providing the graphical capabilities.

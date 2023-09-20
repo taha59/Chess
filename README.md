@@ -2,6 +2,9 @@
 
 This is a Python implementation of a Chess game using the Pygame library. It provides a graphical interface for playing chess against another human player. The game follows the standard rules of chess, including legal moves, capturing pieces, and special moves such as castling and pawn promotion.
 
+## App Demonstration
+[chess_App_Demonstration.webm](https://github.com/taha59/Chess/assets/90119856/01bc51e6-a6f8-44f1-8b14-34e0dcce3161)
+
 ## Prerequisites
 
 - Python 3.10
@@ -28,7 +31,7 @@ python3 chess.py
 
 - Click on a piece to select it and drop it to your desired square.
 - Use the mouse to interact with the game interface.
-- Undo a move by clicking 'z' key. You can't undo a move once the game ends in a stalemate or a draw.
+- Undo a move by clicking the 'z' key. You can't undo a move once the game ends in a stalemate or a draw.
 
 ## Features
 
